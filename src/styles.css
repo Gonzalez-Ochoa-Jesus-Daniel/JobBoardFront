@@ -1,5 +1,6 @@
 @import './styles/tokens.css';
 @import './styles/base.css';
+@import './styles/experience.css';
 @import './styles/layout.css';
 @import './styles/dashboard.css';
 @import './styles/dashboard-data.css';
@@ -11,4 +12,5 @@
 @import './styles/validation.css';
 @import './styles/validation-table.css';
 @import './styles/validation-modal.css';
+@import './styles/admin.css';
 @import './styles/responsive.css';

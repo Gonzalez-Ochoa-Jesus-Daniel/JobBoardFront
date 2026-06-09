@@ -1,13 +1,30 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Camera, CheckCircle2, Globe, Mail, MapPin, Phone, User } from 'lucide-react'
+import {
+  ArrowLeft,
+  Building2,
+  Camera,
+  CheckCircle2,
+  FileBadge2,
+  FileCheck2,
+  Globe,
+  Mail,
+  ShieldCheck,
+  Upload,
+  UserRound,
+  type LucideIcon,
+} from 'lucide-react'
 import campusImg from '@/assets/images/campus.png'
+import { AppButton } from '@/shared/components/AppButton'
+import { FormControl, FORM_FIELD_CLASS } from '@/shared/components/FormControl'
 import { defaultEmpresaProfile, markEmpresaProfileIncomplete, saveEmpresaProfileDraft } from '@/features/empresas/services/empresaProfile.storage'
 import { catalogService } from '@/services/catalog.service'
+import { ROUTES } from '@/router/routes'
 import { authService } from '../services/auth.service'
+import './auth-flow.css'
 
 const pasos = [
-  'Seleccion de tipo de cuenta',
+  'Tipo de cuenta',
   'Registro de datos',
   'Confirmacion',
   'Validacion de perfil',
@@ -25,6 +42,99 @@ const DEFAULT_SECTORES = [
   { id: '9', nombre: 'Transporte' },
   { id: '10', nombre: 'Otro' },
 ]
+
+type DocumentoKey = 'situacionFiscal' | 'docExistencia' | 'repDocCargo' | 'repFotoIne'
+
+const DOCUMENTOS: Array<{
+  key: DocumentoKey
+  label: string
+  description: string
+  icon: LucideIcon
+  required: boolean
+}> = [
+  {
+    key: 'situacionFiscal',
+    label: 'Situacion fiscal',
+    description: 'PDF o imagen de la constancia fiscal.',
+    icon: FileCheck2,
+    required: true,
+  },
+  {
+    key: 'docExistencia',
+    label: 'Existencia de empresa',
+    description: 'Acta, alta o documento legal de la empresa.',
+    icon: Building2,
+    required: true,
+  },
+  {
+    key: 'repDocCargo',
+    label: 'Cargo del representante',
+    description: 'Documento que compruebe el cargo o autorizacion.',
+    icon: FileBadge2,
+    required: true,
+  },
+  {
+    key: 'repFotoIne',
+    label: 'INE del representante',
+    description: 'Identificacion oficial del responsable.',
+    icon: ShieldCheck,
+    required: true,
+  },
+]
+
+type SectionHeadingProps = {
+  icon: LucideIcon
+  title: string
+  description: string
+}
+
+const SectionHeading = ({ icon: Icon, title, description }: SectionHeadingProps) => (
+  <div className="mb-5 flex items-start gap-3">
+    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-600">
+      <Icon size={20} />
+    </span>
+    <div>
+      <h2 className="text-base font-black text-slate-900">{title}</h2>
+      <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
+    </div>
+  </div>
+)
+
+type DocumentUploadCardProps = {
+  item: (typeof DOCUMENTOS)[number]
+  file: File | null
+  onChange: (key: DocumentoKey, file: File | null) => void
+}
+
+const DocumentUploadCard = ({ item, file, onChange }: DocumentUploadCardProps) => {
+  const Icon = item.icon
+
+  return (
+    <label className={`auth-file-card block cursor-pointer ${file ? 'is-ready' : ''}`}>
+      <input
+        type="file"
+        accept=".pdf,image/*"
+        className="hidden"
+        onChange={(event) => onChange(item.key, event.target.files?.[0] ?? null)}
+      />
+      <span className="flex items-start gap-3">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-500">
+          {file ? <CheckCircle2 size={20} className="text-emerald-600" /> : <Icon size={20} />}
+        </span>
+        <span className="min-w-0">
+          <span className="block text-sm font-black text-slate-900">
+            {item.label}
+            {item.required ? <span className="text-orange-500"> *</span> : null}
+          </span>
+          <span className="mt-1 block text-xs leading-5 text-slate-500">{item.description}</span>
+          <span className="mt-2 block truncate text-xs font-bold text-emerald-700">
+            {file ? file.name : 'Seleccionar archivo'}
+          </span>
+        </span>
+      </span>
+    </label>
+  )
+}
 
 export const RegistroEmpresa = () => {
   const navigate = useNavigate()
@@ -47,6 +157,12 @@ export const RegistroEmpresa = () => {
     correoContacto: '',
   })
 
+  const [documentos, setDocumentos] = useState<Record<DocumentoKey, File | null>>({
+    situacionFiscal: null,
+    docExistencia: null,
+    repDocCargo: null,
+    repFotoIne: null,
+  })
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -70,21 +186,43 @@ export const RegistroEmpresa = () => {
     }
   }, [])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
+  useEffect(() => {
+    return () => {
+      if (logoPreview) URL.revokeObjectURL(logoPreview)
+    }
+  }, [logoPreview])
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    setForm((prev) => ({ ...prev, [event.target.name]: event.target.value }))
     setErrorMsg(null)
   }
 
-  const handleLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+  const handleLogo = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
     if (!file) return
     setLogoFile(file)
     setLogoPreview(URL.createObjectURL(file))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleDocumento = (key: DocumentoKey, file: File | null) => {
+    setDocumentos((prev) => ({ ...prev, [key]: file }))
     setErrorMsg(null)
+  }
+
+  const validateDocuments = () => {
+    const missing = DOCUMENTOS.filter((item) => item.required && !documentos[item.key])
+    if (!missing.length) return true
+
+    setErrorMsg(`Faltan documentos de validacion: ${missing.map((item) => item.label).join(', ')}.`)
+    return false
+  }
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault()
+    setErrorMsg(null)
+
+    if (!validateDocuments()) return
+
     setIsSubmitting(true)
 
     try {
@@ -104,6 +242,10 @@ export const RegistroEmpresa = () => {
         repTelefono: form.telefonoContacto,
         repCorreo: form.correoContacto,
         logo: logoFile,
+        situacionFiscal: documentos.situacionFiscal,
+        docExistencia: documentos.docExistencia,
+        repDocCargo: documentos.repDocCargo,
+        repFotoIne: documentos.repFotoIne,
       })
 
       const sectorNombre = sectores.find((sector) => sector.id === form.sectorId)?.nombre
@@ -124,304 +266,292 @@ export const RegistroEmpresa = () => {
   }
 
   return (
-    <div className="h-screen w-full overflow-y-auto">
-      <div
-        className="min-h-screen w-full flex items-center justify-center bg-cover bg-center relative"
-        style={{ backgroundImage: `url(${campusImg})` }}
-      >
-        <div className="absolute inset-0 bg-black/20" />
-
-        <div className="relative z-10 bg-white rounded-3xl shadow-xl w-[90%] max-w-6xl p-8 my-8">
-          <button
-            type="button"
-            onClick={() => navigate('/registro')}
-            className="absolute top-5 left-5 w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors text-gray-600"
-          >
-            <ArrowLeft size={18} />
-          </button>
-
-          <div className="flex items-start justify-center gap-2 mb-8 px-8">
-            {pasos.map((paso, index) => (
-              <div key={paso} className="flex items-center gap-2">
-                <div className="flex flex-col items-center gap-1">
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
-                    index === 0
-                      ? 'bg-emerald-500 text-white'
-                      : index === 1
-                      ? 'bg-orange-400 text-white'
-                      : 'bg-gray-200 text-gray-400'
-                  }`}>
-                    {index === 0
-                      ? <CheckCircle2 size={20} />
-                      : <span className="text-sm font-bold">{index + 1}</span>
-                    }
-                  </div>
-                  <span className={`text-xs text-center w-24 leading-tight ${
-                    index === 0
-                      ? 'text-emerald-500 font-semibold'
-                      : index === 1
-                      ? 'text-orange-400 font-semibold'
-                      : 'text-gray-400'
-                  }`}>
-                    {paso}
-                  </span>
-                </div>
-                {index < pasos.length - 1 && (
-                  <div className={`w-16 h-1 rounded mb-5 ${
-                    index === 0
-                      ? 'bg-gradient-to-r from-emerald-500 to-orange-400'
-                      : 'bg-gray-200'
-                  }`} />
-                )}
-              </div>
-            ))}
-          </div>
-
-          <form onSubmit={handleSubmit} className="grid grid-cols-3 gap-6">
-            <div className="col-span-2 bg-gray-50 rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">Registro de empresa</h2>
-              <span className="bg-emerald-500 text-white text-sm font-semibold px-3 py-1 rounded-full">
-                Paso 2 de 4
-              </span>
-            </div>
-
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
-                <User size={16} color="white" />
-              </div>
-              <div>
-                <p className="font-semibold text-gray-800 text-sm">Cuenta de acceso</p>
-                <p className="text-gray-400 text-xs">Datos para iniciar sesion despues de la validacion</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <label className="flex flex-col gap-1 text-sm text-gray-600">
-                Email
-                <input
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  className="border border-gray-300 rounded-xl px-3 py-2 bg-white text-sm outline-none"
-                  required
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-gray-600">
-                Password
-                <input
-                  type="password"
-                  name="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  className="border border-gray-300 rounded-xl px-3 py-2 bg-white text-sm outline-none"
-                  required
-                />
-              </label>
-            </div>
-
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
-                <Globe size={16} color="white" />
-              </div>
-              <div>
-                <p className="font-semibold text-gray-800 text-sm">Informacion general</p>
-                <p className="text-gray-400 text-xs">Datos basicos de la empresa</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <label className="flex flex-col gap-1 text-sm text-gray-600">
-                Nombre de la empresa
-                <input
-                  name="nombreEmpresa"
-                  value={form.nombreEmpresa}
-                  onChange={handleChange}
-                  className="border border-gray-300 rounded-xl px-3 py-2 bg-white text-sm outline-none"
-                  required
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-gray-600">
-                Telefono de la empresa
-                <input
-                  name="telefonoEmpresa"
-                  value={form.telefonoEmpresa}
-                  onChange={handleChange}
-                  className="border border-gray-300 rounded-xl px-3 py-2 bg-white text-sm outline-none"
-                />
-              </label>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <label className="flex flex-col gap-1 text-sm text-gray-600">
-                Correo de la empresa
-                <input
-                  type="email"
-                  name="correoEmpresa"
-                  value={form.correoEmpresa}
-                  onChange={handleChange}
-                  className="border border-gray-300 rounded-xl px-3 py-2 bg-white text-sm outline-none"
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-gray-600">
-                Sector
-                <select
-                  name="sectorId"
-                  value={form.sectorId}
-                  onChange={handleChange}
-                  className="border border-gray-300 rounded-xl px-3 py-2 bg-white text-sm outline-none"
-                  required
-                >
-                  <option value="">Seleccione una opcion</option>
-                  {sectores.map(sector => (
-                    <option key={sector.id} value={sector.id}>
-                      {sector.nombre}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <label className="flex flex-col gap-1 text-sm text-gray-600">
-                Direccion
-                <div className="flex items-center border border-gray-300 rounded-xl px-3 py-2 bg-white gap-2">
-                  <MapPin size={16} className="text-gray-400" />
-                  <input
-                    name="direccion"
-                    value={form.direccion}
-                    onChange={handleChange}
-                    className="flex-1 text-sm outline-none bg-transparent"
-                  />
-                </div>
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-gray-600">
-                Sitio web
-                <input
-                  name="sitioWeb"
-                  value={form.sitioWeb}
-                  onChange={handleChange}
-                  className="border border-gray-300 rounded-xl px-3 py-2 bg-white text-sm outline-none"
-                />
-              </label>
-            </div>
-
-            <label className="flex flex-col gap-1 text-sm text-gray-600 mb-6">
-              Descripcion
-              <textarea
-                name="descripcion"
-                value={form.descripcion}
-                onChange={handleChange}
-                rows={3}
-                className="border border-gray-300 rounded-xl px-3 py-2 bg-white text-sm outline-none resize-none"
-              />
-            </label>
-
-            <hr className="border-gray-200 mb-6" />
-
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
-                <Mail size={16} color="white" />
-              </div>
-              <div>
-                <p className="font-semibold text-gray-800 text-sm">Representante</p>
-                <p className="text-gray-400 text-xs">Datos del contacto responsable</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <label className="flex flex-col gap-1 text-sm text-gray-600">
-                Nombre(s)
-                <input
-                  name="nombreContacto"
-                  value={form.nombreContacto}
-                  onChange={handleChange}
-                  className="border border-gray-300 rounded-xl px-3 py-2 bg-white text-sm outline-none"
-                  required
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-gray-600">
-                Apellidos
-                <input
-                  name="apellidosContacto"
-                  value={form.apellidosContacto}
-                  onChange={handleChange}
-                  className="border border-gray-300 rounded-xl px-3 py-2 bg-white text-sm outline-none"
-                  required
-                />
-              </label>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <label className="flex flex-col gap-1 text-sm text-gray-600">
-                Puesto
-                <input
-                  name="puesto"
-                  value={form.puesto}
-                  onChange={handleChange}
-                  className="border border-gray-300 rounded-xl px-3 py-2 bg-white text-sm outline-none"
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-gray-600">
-                Telefono
-                <div className="flex items-center border border-gray-300 rounded-xl px-3 py-2 bg-white gap-2">
-                  <Phone size={16} className="text-gray-400" />
-                  <input
-                    name="telefonoContacto"
-                    value={form.telefonoContacto}
-                    onChange={handleChange}
-                    className="flex-1 text-sm outline-none bg-transparent"
-                  />
-                </div>
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-gray-600">
-                Correo
-                <input
-                  type="email"
-                  name="correoContacto"
-                  value={form.correoContacto}
-                  onChange={handleChange}
-                  className="border border-gray-300 rounded-xl px-3 py-2 bg-white text-sm outline-none"
-                />
-              </label>
-            </div>
-
-            {errorMsg && (
-              <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                {errorMsg}
-              </div>
-            )}
-          </div>
-
-            <div className="col-span-1 flex flex-col gap-4">
-            <div className="bg-gray-50 rounded-2xl p-6 flex flex-col items-center gap-3">
-              <div
-                onClick={() => logoRef.current?.click()}
-                className="w-28 h-28 rounded-full bg-gray-200 flex items-center justify-center cursor-pointer overflow-hidden border-4 border-emerald-100 hover:border-emerald-300 transition-colors"
-              >
-                {logoPreview
-                  ? <img src={logoPreview} alt="logo" className="w-full h-full object-cover" />
-                  : <Camera size={36} className="text-gray-400" />
-                }
-              </div>
-              <p className="text-sm text-gray-600 font-medium text-center">
-                Subir logotipo de la empresa
-              </p>
-              <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogo} />
-            </div>
-
+    <main className="auth-page" style={{ backgroundImage: `url(${campusImg})` }}>
+      <div className="auth-page__shade">
+        <section className="auth-panel auth-panel--wide p-5 sm:p-7 lg:p-8" aria-labelledby="registro-empresa-title">
+          <div className="mb-7 flex items-start justify-between gap-4">
             <button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50"
+              type="button"
+              onClick={() => navigate(ROUTES.SELECCION_CUENTA)}
+              className="auth-back-button"
+              aria-label="Volver a seleccion de cuenta"
             >
-              {isSubmitting ? 'Registrando...' : 'Continuar'}
+              <ArrowLeft size={18} />
             </button>
+
+            <div className="auth-stepper flex-1">
+              {pasos.map((paso, index) => (
+                <div
+                  key={paso}
+                  className={`auth-step ${index === 0 ? 'is-complete' : index === 1 ? 'is-current' : ''}`}
+                >
+                  <span className="auth-step__dot">
+                    {index === 0 ? <CheckCircle2 size={20} /> : index + 1}
+                  </span>
+                  <span className="auth-step__label">{paso}</span>
+                </div>
+              ))}
             </div>
+          </div>
+
+          <div className="mb-7 grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-end">
+            <div>
+              <p className="auth-eyebrow">Registro empresarial</p>
+              <h1 id="registro-empresa-title" className="mt-4 text-3xl font-black text-slate-950 sm:text-4xl">
+                Alta de empresa para validacion
+              </h1>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500">
+                Completa los datos fiscales, del representante y los documentos probatorios para que administracion pueda aprobar el perfil.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm leading-6 text-emerald-800">
+              <strong className="block text-emerald-900">Archivos requeridos</strong>
+              La API de registro usa multipart-form, por eso los documentos se envian junto con los datos de la empresa.
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-[minmax(0,1.32fr)_minmax(320px,0.68fr)]">
+            <div className="grid gap-5">
+              <section className="auth-section-card">
+                <SectionHeading
+                  icon={UserRound}
+                  title="Cuenta de acceso"
+                  description="Credenciales que usara la empresa despues de la validacion."
+                />
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormControl label="Email de acceso">
+                    <input
+                      type="email"
+                      name="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      className={FORM_FIELD_CLASS}
+                      placeholder="empresa@correo.com"
+                      required
+                    />
+                  </FormControl>
+                  <FormControl label="Password">
+                    <input
+                      type="password"
+                      name="password"
+                      value={form.password}
+                      onChange={handleChange}
+                      className={FORM_FIELD_CLASS}
+                      placeholder="Minimo 6 caracteres"
+                      minLength={6}
+                      required
+                    />
+                  </FormControl>
+                </div>
+              </section>
+
+              <section className="auth-section-card">
+                <SectionHeading
+                  icon={Globe}
+                  title="Datos de la empresa"
+                  description="Informacion publica y fiscal para identificar a la organizacion."
+                />
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormControl label="Nombre de la empresa">
+                    <input
+                      name="nombreEmpresa"
+                      value={form.nombreEmpresa}
+                      onChange={handleChange}
+                      className={FORM_FIELD_CLASS}
+                      placeholder="Nombre comercial o razon social"
+                      required
+                    />
+                  </FormControl>
+                  <FormControl label="Sector">
+                    <select
+                      name="sectorId"
+                      value={form.sectorId}
+                      onChange={handleChange}
+                      className={FORM_FIELD_CLASS}
+                      required
+                    >
+                      <option value="">Seleccione una opcion</option>
+                      {sectores.map((sector) => (
+                        <option key={sector.id} value={sector.id}>
+                          {sector.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </FormControl>
+                  <FormControl label="Telefono de la empresa">
+                    <input
+                      name="telefonoEmpresa"
+                      value={form.telefonoEmpresa}
+                      onChange={handleChange}
+                      className={FORM_FIELD_CLASS}
+                      placeholder="222 000 0000"
+                    />
+                  </FormControl>
+                  <FormControl label="Correo de la empresa">
+                    <input
+                      type="email"
+                      name="correoEmpresa"
+                      value={form.correoEmpresa}
+                      onChange={handleChange}
+                      className={FORM_FIELD_CLASS}
+                      placeholder="contacto@empresa.com"
+                    />
+                  </FormControl>
+                  <FormControl label="Direccion">
+                    <input
+                      name="direccion"
+                      value={form.direccion}
+                      onChange={handleChange}
+                      className={FORM_FIELD_CLASS}
+                      placeholder="Calle, numero, ciudad"
+                    />
+                  </FormControl>
+                  <FormControl label="Sitio web">
+                    <input
+                      name="sitioWeb"
+                      value={form.sitioWeb}
+                      onChange={handleChange}
+                      className={FORM_FIELD_CLASS}
+                      placeholder="https://empresa.com"
+                    />
+                  </FormControl>
+                  <div className="md:col-span-2">
+                    <FormControl label="Descripcion">
+                      <textarea
+                        name="descripcion"
+                        value={form.descripcion}
+                        onChange={handleChange}
+                        rows={4}
+                        className={`${FORM_FIELD_CLASS} resize-none`}
+                        placeholder="Describe brevemente la actividad de la empresa"
+                      />
+                    </FormControl>
+                  </div>
+                </div>
+              </section>
+
+              <section className="auth-section-card">
+                <SectionHeading
+                  icon={Mail}
+                  title="Representante o responsable"
+                  description="Persona que administracion contactara para validar el registro."
+                />
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormControl label="Nombre(s)">
+                    <input
+                      name="nombreContacto"
+                      value={form.nombreContacto}
+                      onChange={handleChange}
+                      className={FORM_FIELD_CLASS}
+                      required
+                    />
+                  </FormControl>
+                  <FormControl label="Apellidos">
+                    <input
+                      name="apellidosContacto"
+                      value={form.apellidosContacto}
+                      onChange={handleChange}
+                      className={FORM_FIELD_CLASS}
+                      required
+                    />
+                  </FormControl>
+                  <FormControl label="Puesto o cargo">
+                    <input
+                      name="puesto"
+                      value={form.puesto}
+                      onChange={handleChange}
+                      className={FORM_FIELD_CLASS}
+                      placeholder="Representante legal, RH, direccion..."
+                    />
+                  </FormControl>
+                  <FormControl label="Telefono">
+                    <input
+                      name="telefonoContacto"
+                      value={form.telefonoContacto}
+                      onChange={handleChange}
+                      className={FORM_FIELD_CLASS}
+                      placeholder="222 000 0000"
+                    />
+                  </FormControl>
+                  <div className="md:col-span-2">
+                    <FormControl label="Correo del representante">
+                      <input
+                        type="email"
+                        name="correoContacto"
+                        value={form.correoContacto}
+                        onChange={handleChange}
+                        className={FORM_FIELD_CLASS}
+                        placeholder="representante@empresa.com"
+                      />
+                    </FormControl>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <aside className="grid content-start gap-5">
+              <section className="auth-section-card">
+                <SectionHeading
+                  icon={Camera}
+                  title="Logotipo"
+                  description="Opcional, ayuda a reconocer la empresa en la plataforma."
+                />
+                <button
+                  type="button"
+                  onClick={() => logoRef.current?.click()}
+                  className="auth-spotlight grid w-full place-items-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center transition hover:border-emerald-300 hover:bg-white"
+                >
+                  <span className="grid h-28 w-28 place-items-center overflow-hidden rounded-3xl border-4 border-white bg-slate-200 shadow-sm">
+                    {logoPreview ? (
+                      <img src={logoPreview} alt="Logo de empresa" className="h-full w-full object-cover" />
+                    ) : (
+                      <Camera size={34} className="text-slate-400" />
+                    )}
+                  </span>
+                  <span className="mt-3 text-sm font-black text-slate-900">
+                    {logoFile ? logoFile.name : 'Subir logotipo'}
+                  </span>
+                  <span className="mt-1 text-xs text-slate-500">PNG, JPG o WEBP</span>
+                </button>
+                <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogo} />
+              </section>
+
+              <section className="auth-section-card">
+                <SectionHeading
+                  icon={Upload}
+                  title="Documentos probatorios"
+                  description="Estos archivos se envian a validacion del administrador."
+                />
+                <div className="grid gap-3">
+                  {DOCUMENTOS.map((item) => (
+                    <DocumentUploadCard
+                      key={item.key}
+                      item={item}
+                      file={documentos[item.key]}
+                      onChange={handleDocumento}
+                    />
+                  ))}
+                </div>
+              </section>
+
+              {errorMsg ? (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                  {errorMsg}
+                </div>
+              ) : null}
+
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                <AppButton type="submit" isLoading={isSubmitting} fullWidth>
+                  Continuar
+                </AppButton>
+                <AppButton type="button" variant="secondary" onClick={() => navigate(ROUTES.SELECCION_CUENTA)} fullWidth>
+                  Cambiar tipo de cuenta
+                </AppButton>
+              </div>
+            </aside>
           </form>
-        </div>
+        </section>
       </div>
-    </div>
+    </main>
   )
 }

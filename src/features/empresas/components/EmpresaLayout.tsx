@@ -1,104 +1,58 @@
-import { useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Briefcase, Users, Bell, Building2, LogOut } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { PageWrapper } from '@/components/layout/PageWrapper'
+import { APP_ICONS, APP_ICON_SIZE, APP_ICON_STROKE_WIDTH } from '@/config/iconConfig'
 import { ROUTES } from '@/router/routes'
-import { useLogout } from '@/features/auth/hooks/useAuth'
 import { useEmpresaPerfil } from '../hooks/useEmpresa'
 
-
 interface EmpresaLayoutProps {
-  children: React.ReactNode   
+  children: ReactNode
 }
-
-const menuItems = [
-  { label: 'Panel de control', path: '/empresas/dashboard', icon: LayoutDashboard },
-  { label: 'Mis publicaciones', path: '/empresas/publicaciones', icon: Briefcase },
-  { label: 'Postulantes', path: '/empresas/postulantes', icon: Users },
-  { label: 'Mi perfil', path: '/empresas/perfil', icon: Building2 },
-]
 
 export const EmpresaLayout = ({ children }: EmpresaLayoutProps) => {
   const navigate = useNavigate()
-  const location = useLocation()
   const { data: perfil } = useEmpresaPerfil()
-  const { logout, isLoggingOut } = useLogout()
+  const companyName = perfil?.nombreEmpresa ?? 'Empresa'
+  const companyEmail = perfil?.correoEmpresa ?? perfil?.email ?? 'Perfil empresarial'
 
   return (
-    <div className="h-screen overflow-hidden bg-transparent">
-
-      {/* Header */}
-      <header className="bg-white/90 backdrop-blur shadow-sm px-8 py-4 flex items-center justify-between fixed top-0 left-0 right-0 z-20 border-b border-emerald-100">
-        <img
-          src="https://www.figma.com/api/mcp/asset/85f9971e-856a-480c-a67c-4332dd4452d8"
-          alt="UTTecam"
-          className="h-12"
-        />
-        <div className="flex items-center gap-4">
-          <button className="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center hover:bg-emerald-100 transition-colors">
-            <Bell size={18} className="text-emerald-600" />
-          </button>
-          <button
-            onClick={() => navigate(ROUTES.EMPRESA_CREAR_VACANTE)}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-full text-sm transition-colors flex items-center gap-2"
-          >
-            + Publicar vacante
-          </button>
-          <button
-            type="button"
-            onClick={logout}
-            disabled={isLoggingOut}
-            className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-white px-3 py-2 text-sm font-semibold text-emerald-600 transition-colors hover:border-emerald-200 hover:bg-emerald-50"
-          >
-            <LogOut size={16} />
-            {isLoggingOut ? 'Cerrando...' : 'Cerrar sesion'}
-          </button>
-        </div>
-      </header>
-
-      <div className="pt-20">
-
-        {/* Sidebar */}
-        <aside className="fixed bottom-0 left-0 top-20 flex w-64 flex-col justify-between overflow-y-auto border-r border-emerald-100 bg-white/95 px-4 py-6 shadow-sm backdrop-blur">
-          <nav className="flex flex-col gap-2">
-            {menuItems.map((item) => {
-              const Icono = item.icon
-              const activo = location.pathname === item.path
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => navigate(item.path)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors text-left ${
-                    activo
-                      ? 'bg-emerald-500 text-white shadow-sm'
-                      : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-600'
-                  }`}
-                >
-                  <Icono size={18} />
-                  {item.label}
-                </button>
-              )
-            })}
-          </nav>
-
-          {/* Usuario abajo */}
-          <div className="border-t border-emerald-100 pt-4">
-            <div className="flex items-center gap-3 p-3 border border-emerald-100 rounded-2xl bg-emerald-50">
-              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                <Users size={18} className="text-emerald-500" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-800">{perfil?.nombreEmpresa ?? 'Empresa'}</p>
-                <p className="text-xs text-slate-400">{perfil?.correoEmpresa ?? perfil?.email ?? 'Perfil empresarial'}</p>
-              </div>
-            </div>
+    <PageWrapper
+      role="Empresa"
+      account={{
+        title: companyName,
+        subtitle: companyEmail,
+        icon: APP_ICONS.company,
+      }}
+    >
+      <div className="empresa-workspace">
+        <header className="empresa-topbar">
+          <div className="min-w-0">
+            <p className="empresa-topbar-label">Espacio de empresa</p>
+            <p className="empresa-topbar-title">{companyName}</p>
           </div>
-        </aside>
 
-        {/* Contenido */}
-        <main className="ml-64 h-[calc(100vh-5rem)] overflow-y-auto p-8">
+          <div className="empresa-topbar-actions">
+            <button type="button" className="empresa-icon-button" aria-label="Ver notificaciones">
+              <APP_ICONS.notifications
+                size={APP_ICON_SIZE}
+                strokeWidth={APP_ICON_STROKE_WIDTH}
+              />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.EMPRESA_CREAR_VACANTE)}
+              className="empresa-primary-action"
+            >
+              <APP_ICONS.create size={APP_ICON_SIZE} strokeWidth={APP_ICON_STROKE_WIDTH} />
+              <span>Publicar vacante</span>
+            </button>
+          </div>
+        </header>
+
+        <div className="empresa-content">
           {children}
-        </main>
-
+        </div>
       </div>
-    </div>
+    </PageWrapper>
   )
 }

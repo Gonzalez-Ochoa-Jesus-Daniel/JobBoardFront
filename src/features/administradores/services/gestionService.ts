@@ -21,7 +21,11 @@ const formatDate = (value: string): string => {
   }).format(date)
 }
 
-const toUserType = (rol: string): ManagementUserType => (rol === 'Empresa' ? 'Empresa' : 'Egresado')
+const toUserType = (rol: string): ManagementUserType => {
+  if (rol === 'Empresa') return 'Empresa'
+  if (rol === 'Egresado') return 'Egresado'
+  return 'Alumno'
+}
 
 const toManagementUser = (user: AdminUsuario): ManagementUser => {
   const type = toUserType(user.rol)
@@ -50,7 +54,8 @@ const toManagementUser = (user: AdminUsuario): ManagementUser => {
 export async function getManagementOverview(): Promise<ManagementOverview> {
   const response = await adminService.getUsuarios()
   const users = response.usuarios.map(toManagementUser)
-  const graduateCount = response.usuarios.filter((user) => user.rol === 'Estudiante').length
+  const graduateCount = response.usuarios.filter((user) => user.rol === 'Egresado').length
+  const studentCount = response.usuarios.filter((user) => user.rol === 'Estudiante').length
   const companyCount = response.usuarios.filter((user) => user.rol === 'Empresa').length
 
   return {
@@ -59,7 +64,7 @@ export async function getManagementOverview(): Promise<ManagementOverview> {
       { label: 'Inactivos', value: response.totalInactivos, Icon: XCircle, tone: 'inactive' },
       { label: 'Egresados', value: graduateCount, Icon: GraduationCap, tone: 'graduate' },
       { label: 'Empresas', value: companyCount, Icon: Building2, tone: 'company' },
-      { label: 'Estudiantes', value: graduateCount, Icon: UserSquare2, tone: 'student' },
+      { label: 'Estudiantes', value: studentCount, Icon: UserSquare2, tone: 'student' },
     ],
     users,
   }

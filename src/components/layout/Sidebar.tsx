@@ -1,98 +1,196 @@
+import { Menu, X, type LucideIcon } from 'lucide-react'
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import {
-  BriefcaseBusiness,
-  CircleUserRound,
-  ClipboardList,
-  Home,
-  LogOut,
-  ShieldCheck,
-  UserRoundCheck,
-  Users,
-} from 'lucide-react'
-import type { UserRole } from '@/features/auth/types/auth.types'
+import { APP_ICONS, APP_ICON_SIZE, APP_ICON_STROKE_WIDTH } from '@/config/iconConfig'
 import { useLogout } from '@/features/auth/hooks/useAuth'
+import type { UserRole } from '@/features/auth/types/auth.types'
 import { ROUTES } from '@/router/routes'
+
+export interface SidebarAccount {
+  title: string
+  subtitle?: string
+  icon?: LucideIcon
+}
 
 interface SidebarProps {
   role: UserRole
+  account?: SidebarAccount
 }
 
 type MenuItem = {
   label: string
   path: string
-  icon: typeof Home
+  icon: LucideIcon
 }
 
-const estudianteItems: MenuItem[] = [
-  { label: 'Panel de control', path: ROUTES.ESTUDIANTE_DASHBOARD, icon: Home },
-  { label: 'Publicaciones', path: ROUTES.ESTUDIANTE_PUBLICACIONES, icon: BriefcaseBusiness },
-  { label: 'Mi perfil', path: ROUTES.ESTUDIANTE_PERFIL, icon: CircleUserRound },
-  { label: 'Seguimiento', path: ROUTES.ESTUDIANTE_SEGUIMIENTO, icon: UserRoundCheck },
+type NavigationGroup = {
+  label: string
+  items: MenuItem[]
+}
+
+const estudianteGroups: NavigationGroup[] = [
+  {
+    label: 'General',
+    items: [
+      { label: 'Panel de control', path: ROUTES.ESTUDIANTE_DASHBOARD, icon: APP_ICONS.dashboard },
+    ],
+  },
+  {
+    label: 'Oportunidades',
+    items: [
+      { label: 'Publicaciones', path: ROUTES.ESTUDIANTE_PUBLICACIONES, icon: APP_ICONS.publications },
+      { label: 'Seguimiento', path: ROUTES.ESTUDIANTE_SEGUIMIENTO, icon: APP_ICONS.tracking },
+    ],
+  },
+  {
+    label: 'Cuenta',
+    items: [
+      { label: 'Mi perfil', path: ROUTES.ESTUDIANTE_PERFIL, icon: APP_ICONS.profile },
+    ],
+  },
 ]
 
-const menuItems: Record<UserRole, MenuItem[]> = {
+const navigationGroups: Record<UserRole, NavigationGroup[]> = {
   Admin: [
-    { label: 'Dashboard', path: ROUTES.ADMIN_DASHBOARD, icon: Home },
-    { label: 'Centro de validacion', path: ROUTES.ADMIN_VALIDACION, icon: ShieldCheck },
-    { label: 'Centro de gestion', path: ROUTES.ADMIN_GESTION, icon: ClipboardList },
-    { label: 'Publicaciones', path: ROUTES.ADMIN_PUBLICACIONES, icon: BriefcaseBusiness },
-    { label: 'Seguimiento de postulaciones', path: ROUTES.ADMIN_SEGUIMIENTO, icon: Users },
+    {
+      label: 'General',
+      items: [
+        { label: 'Dashboard', path: ROUTES.ADMIN_DASHBOARD, icon: APP_ICONS.dashboard },
+      ],
+    },
+    {
+      label: 'Operacion',
+      items: [
+        { label: 'Centro de validacion', path: ROUTES.ADMIN_VALIDACION, icon: APP_ICONS.validation },
+        { label: 'Centro de gestion', path: ROUTES.ADMIN_GESTION, icon: APP_ICONS.management },
+        { label: 'Publicaciones', path: ROUTES.ADMIN_PUBLICACIONES, icon: APP_ICONS.publications },
+        { label: 'Seguimiento', path: ROUTES.ADMIN_SEGUIMIENTO, icon: APP_ICONS.tracking },
+      ],
+    },
+    {
+      label: 'Sistema',
+      items: [
+        { label: 'Configuracion', path: ROUTES.ADMIN_CONFIGURACION, icon: APP_ICONS.settings },
+      ],
+    },
   ],
   Empresa: [
-    { label: 'Panel de control', path: ROUTES.EMPRESA_DASHBOARD, icon: Home },
-    { label: 'Publicaciones', path: ROUTES.EMPRESA_PUBLICACIONES, icon: BriefcaseBusiness },
-    { label: 'Postulantes', path: ROUTES.EMPRESA_POSTULANTES, icon: UserRoundCheck },
-    { label: 'Perfil', path: ROUTES.EMPRESA_PERFIL, icon: CircleUserRound },
+    {
+      label: 'General',
+      items: [
+        { label: 'Panel de control', path: ROUTES.EMPRESA_DASHBOARD, icon: APP_ICONS.dashboard },
+      ],
+    },
+    {
+      label: 'Operacion',
+      items: [
+        { label: 'Mis publicaciones', path: ROUTES.EMPRESA_PUBLICACIONES, icon: APP_ICONS.publications },
+        { label: 'Postulantes', path: ROUTES.EMPRESA_POSTULANTES, icon: APP_ICONS.applicants },
+      ],
+    },
+    {
+      label: 'Cuenta',
+      items: [
+        { label: 'Mi perfil', path: ROUTES.EMPRESA_PERFIL, icon: APP_ICONS.profile },
+      ],
+    },
   ],
-  Estudiante: estudianteItems,
-  Egresado: estudianteItems,
+  Estudiante: estudianteGroups,
+  Egresado: estudianteGroups,
 }
 
-export const Sidebar = ({ role }: SidebarProps) => {
-  const items = menuItems[role]
+const roleAccount: Record<UserRole, Required<Pick<SidebarAccount, 'title' | 'subtitle' | 'icon'>>> = {
+  Admin: {
+    title: 'Administracion',
+    subtitle: 'Control institucional',
+    icon: APP_ICONS.validation,
+  },
+  Empresa: {
+    title: 'Empresa',
+    subtitle: 'Perfil empresarial',
+    icon: APP_ICONS.company,
+  },
+  Estudiante: {
+    title: 'Estudiante',
+    subtitle: 'Bolsa de trabajo',
+    icon: APP_ICONS.students,
+  },
+  Egresado: {
+    title: 'Egresado',
+    subtitle: 'Bolsa de trabajo',
+    icon: APP_ICONS.students,
+  },
+}
+
+export const Sidebar = ({ role, account }: SidebarProps) => {
   const { logout, isLoggingOut } = useLogout()
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const groups = navigationGroups[role]
+  const defaultAccount = roleAccount[role]
+  const AccountIcon = account?.icon ?? defaultAccount.icon
 
   return (
-    <aside className="flex min-h-screen w-64 flex-col border-r border-[#ece7df] bg-white">
-      <div className="px-4 py-8">
-        <div className="flex items-center justify-center">
-          <img
-            src="/logouttecam-removebg-preview.png"
-            alt="UTTECAM"
-            className="h-16 w-auto max-w-52 object-contain"
-          />
+    <aside className={`sidebar ${role.toLowerCase()}-sidebar ${isMenuOpen ? 'is-open' : ''}`}>
+      <div className="sidebar-topbar">
+        <div className="brand">
+          <div className="brand-mark">
+            <img className="brand-logo" src="/logouttecam-removebg-preview.png" alt="UTTECAM" />
+          </div>
         </div>
-      </div>
 
-      <nav className="flex flex-1 flex-col gap-3 p-4 pt-5">
-        {items.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) =>
-              `group flex items-center gap-3 rounded-2xl px-3 py-3 text-base font-semibold transition-all duration-200 ${
-                isActive
-                  ? 'bg-[#10B981] text-white shadow-[0_8px_16px_rgba(16,185,129,0.35)]'
-                  : 'text-slate-500 hover:-translate-y-0.5 hover:bg-[#efebe5] hover:text-slate-700'
-              }`
-            }
-          >
-            <item.icon size={20} strokeWidth={2} />
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
-      </nav>
-
-      <div className="border-t border-[#ece7df] p-4">
         <button
           type="button"
-          onClick={logout}
-          disabled={isLoggingOut}
-          className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 font-semibold text-slate-500 transition-all duration-200 hover:bg-red-500 hover:text-white"
+          className="sidebar-menu-toggle"
+          aria-label={isMenuOpen ? 'Cerrar menu' : 'Abrir menu'}
+          aria-expanded={isMenuOpen}
+          onClick={() => setIsMenuOpen((current) => !current)}
         >
-          <LogOut size={20} strokeWidth={2} />
-          <span>{isLoggingOut ? 'Saliendo...' : 'Salir'}</span>
+          {isMenuOpen ? <X size={21} /> : <Menu size={21} />}
         </button>
+      </div>
+
+      <div className="sidebar-menu">
+        <nav className="nav" aria-label={`Navegacion de ${role.toLowerCase()}`}>
+          {groups.map((group) => (
+            <section key={group.label} className="nav-group">
+              <p className="nav-group-label">{group.label}</p>
+              <div className="nav-group-items">
+                {group.items.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+                    to={item.path}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <span className="nav-icon">
+                      <item.icon size={APP_ICON_SIZE} strokeWidth={APP_ICON_STROKE_WIDTH} />
+                    </span>
+                    <span>{item.label}</span>
+                  </NavLink>
+                ))}
+              </div>
+            </section>
+          ))}
+        </nav>
+
+        <div className="nav-footer">
+          <div className="sidebar-account">
+            <span className="sidebar-account-icon">
+              <AccountIcon size={APP_ICON_SIZE} strokeWidth={APP_ICON_STROKE_WIDTH} />
+            </span>
+            <span className="sidebar-account-copy">
+              <strong>{account?.title || defaultAccount.title}</strong>
+              <small>{account?.subtitle || defaultAccount.subtitle}</small>
+            </span>
+          </div>
+
+          <button type="button" className="nav-item" onClick={logout} disabled={isLoggingOut}>
+            <span className="nav-icon">
+              <APP_ICONS.logout size={APP_ICON_SIZE} strokeWidth={APP_ICON_STROKE_WIDTH} />
+            </span>
+            {isLoggingOut ? 'Saliendo...' : 'Salir'}
+          </button>
+        </div>
       </div>
     </aside>
   )

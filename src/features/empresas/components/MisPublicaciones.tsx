@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Eye, FileEdit, XCircle, } from 'lucide-react'
 import { ROUTES } from '@/router/routes'
+import { useConfirmDialog } from '@/shared/components/appConfirmContext'
+import { useAppToast } from '@/shared/components/appToastContext'
+import { EmptyState, ErrorState, LoadingState } from '@/shared/components/StateFeedback'
 import { useVacantes, useActualizarEstatusVacante } from '../hooks/useEmpresa'
 
 const filtros = ['Todo', 'Activas', 'Pendientes', 'Cerradas'] as const
@@ -22,16 +25,29 @@ const textEstatus: Record<string, string> = {
 
 export const MisPublicaciones = () => {
   const navigate = useNavigate()
+  const { confirm } = useConfirmDialog()
+  const toast = useAppToast()
   const [filtroActivo, setFiltroActivo] = useState('Todo')
   const [busqueda, setBusqueda] = useState('')
 
   const { data: vacantes = [], isLoading, isError } = useVacantes()
   const { mutate: actualizarEstatus } = useActualizarEstatusVacante()
 
-  const handleCerrarVacante = (id: number, titulo: string) => {
-    const confirmar = window.confirm(`¿Cerrar la vacante "${titulo}"?`)
+  const handleCerrarVacante = async (id: number, titulo: string) => {
+    const confirmar = await confirm({
+      title: 'Cerrar vacante',
+      message: `La vacante "${titulo}" dejara de estar disponible para postulaciones.`,
+      confirmLabel: 'Cerrar vacante',
+      tone: 'danger',
+    })
     if (!confirmar) return
-    actualizarEstatus({ publicacionId: id, data: { estatus: 'Finalizada' } })
+    actualizarEstatus(
+      { publicacionId: id, data: { estatus: 'Finalizada' } },
+      {
+        onSuccess: () => toast.success('Vacante cerrada', `"${titulo}" se marco como finalizada.`),
+        onError: () => toast.error('No se pudo cerrar', 'Intenta actualizar la vacante nuevamente.'),
+      }
+    )
   }
 
   const handleVerVacante = (id: number) => {
@@ -55,15 +71,11 @@ export const MisPublicaciones = () => {
 })
 
   if (isLoading) return (
-    <div className="flex items-center justify-center py-20">
-      <p className="text-gray-400 text-sm">Cargando vacantes...</p>
-    </div>
+    <LoadingState title="Cargando vacantes" message="Estamos consultando tus publicaciones." />
   )
 
   if (isError) return (
-    <div className="flex items-center justify-center py-20">
-      <p className="text-red-400 text-sm">Error al cargar las vacantes. Intenta de nuevo.</p>
-    </div>
+    <ErrorState title="Error al cargar vacantes" message="Intenta actualizar la pagina en unos segundos." />
   )
 
   return (
@@ -137,11 +149,41 @@ export const MisPublicaciones = () => {
       {/* Tabla */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         {vacantesFiltradas.length === 0 ? (
-          <div className="py-16 text-center text-gray-400 text-sm">
-            No hay vacantes para mostrar.
-          </div>
+          <EmptyState title="No hay vacantes para mostrar" message="Cambia los filtros o publica una nueva vacante." compact />
         ) : (
-          <table className="w-full">
+          <>
+          <div className="grid gap-3 p-3 md:hidden">
+            {vacantesFiltradas.map((vacante) => (
+              <article key={vacante.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">{vacante.titulo}</h3>
+                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{vacante.descripcion}</p>
+                  </div>
+                  <span className={`shrink-0 text-xs font-bold ${textEstatus[vacante.estatus] ?? 'text-gray-400'}`}>
+                    {vacante.estatus}
+                  </span>
+                </div>
+                <div className="mt-4 grid gap-2 text-sm text-slate-600">
+                  <span>Modalidad: <strong className="text-slate-900">{vacante.modalidad}</strong></span>
+                  <span>Sueldo: <strong className="text-slate-900">${vacante.sueldoAprox?.toLocaleString('es-MX') ?? '---'}</strong></span>
+                </div>
+                <div className="mt-4 flex justify-end gap-2">
+                  <button type="button" onClick={() => handleVerVacante(vacante.id)} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600">
+                    Ver
+                  </button>
+                  <button type="button" onClick={() => handleEditarVacante(vacante.id)} className="rounded-xl border border-emerald-100 px-3 py-2 text-xs font-bold text-emerald-600">
+                    Editar
+                  </button>
+                  <button type="button" onClick={() => handleCerrarVacante(vacante.id, vacante.titulo)} className="rounded-xl border border-orange-100 px-3 py-2 text-xs font-bold text-orange-600">
+                    Cerrar
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <table className="hidden w-full md:table">
             <thead className="bg-gray-50">
               <tr>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Vacante</th>
@@ -199,6 +241,7 @@ export const MisPublicaciones = () => {
               ))}
             </tbody>
           </table>
+          </>
         )}
       </div>
     </div>

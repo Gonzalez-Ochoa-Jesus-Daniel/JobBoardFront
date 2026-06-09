@@ -1,0 +1,129 @@
+.app-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.42);
+  padding: 18px;
+  backdrop-filter: blur(8px);
+}
+
+.app-confirm {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 16px;
+  width: min(460px, 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background: #ffffff;
+  padding: 20px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+  animation: app-confirm-in 180ms ease both;
+}
+
+.app-confirm__icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 16px;
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.app-confirm--danger .app-confirm__icon {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.app-confirm--info .app-confirm__icon {
+  background: #eff6ff;
+  color: #0284c7;
+}
+
+.app-confirm__content {
+  min-width: 0;
+}
+
+.app-confirm h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.app-confirm p {
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.app-confirm__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.app-confirm button {
+  min-height: 40px;
+  border-radius: 12px;
+  padding: 0 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.app-confirm__cancel {
+  border: 1px solid #dbe2ea;
+  background: #ffffff;
+  color: #475569;
+}
+
+.app-confirm__cancel:hover {
+  background: #f8fafc;
+}
+
+.app-confirm__accept {
+  border: 1px solid #ea580c;
+  background: #ea580c;
+  color: #ffffff;
+}
+
+.app-confirm--danger .app-confirm__accept {
+  border-color: #dc2626;
+  background: #dc2626;
+}
+
+.app-confirm--info .app-confirm__accept {
+  border-color: #009a4d;
+  background: #009a4d;
+}
+
+@keyframes app-confirm-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 520px) {
+  .app-confirm {
+    grid-template-columns: 1fr;
+  }
+
+  .app-confirm__actions {
+    flex-direction: column-reverse;
+  }
+
+  .app-confirm button {
+    width: 100%;
+  }
+}

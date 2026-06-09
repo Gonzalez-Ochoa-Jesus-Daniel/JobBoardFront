@@ -24,7 +24,7 @@ function ManagementUsersTable({ rows, onView }: ManagementUsersTableProps) {
 				<tbody>
 					{rows.map((row) => (
 						<tr key={row.id}>
-							<td>
+							<td data-label="Usuario">
 								<div className="management-user-cell">
 									<span className="management-avatar">{row.avatarLetter}</span>
 									<span>
@@ -33,20 +33,20 @@ function ManagementUsersTable({ rows, onView }: ManagementUsersTableProps) {
 									</span>
 								</div>
 							</td>
-							<td>
-								<span className={`management-type-pill ${row.type === 'Empresa' ? 'is-company' : 'is-grad'}`}>
+							<td data-label="Tipo">
+								<span className={`management-type-pill ${row.type === 'Empresa' ? 'is-company' : row.type === 'Alumno' ? 'is-student' : 'is-grad'}`}>
 									{row.type}
 								</span>
 							</td>
-							<td>{row.contact}</td>
-							<td>{row.registerDate}</td>
-							<td>
+							<td data-label="Contacto">{row.contact}</td>
+							<td data-label="Registro">{row.registerDate}</td>
+							<td data-label="Estado">
 								<span className={`management-state-pill ${row.state === 'Activo' ? 'is-active' : 'is-inactive'}`}>
 									<Circle size={8} fill="currentColor" strokeWidth={0} />
 									{row.state}
 								</span>
 							</td>
-							<td>
+							<td data-label="Acciones">
 								<button type="button" className="management-view-action" aria-label="Ver detalle" onClick={() => onView(row)}>
 									<Eye size={APP_ICON_SIZE} strokeWidth={APP_ICON_STROKE_WIDTH} />
 									<span>Ver</span>
@@ -58,15 +58,7 @@ function ManagementUsersTable({ rows, onView }: ManagementUsersTableProps) {
 			</table>
 
 			<footer className="management-pagination">
-				<span>Página 1</span>
-				<div>
-					<button type="button" aria-label="Página anterior">
-						‹
-					</button>
-					<button type="button" aria-label="Página siguiente">
-						›
-					</button>
-				</div>
+				<span>Mostrando {rows.length} usuarios</span>
 			</footer>
 		</section>
 	)

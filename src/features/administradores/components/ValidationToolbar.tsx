@@ -1,25 +1,22 @@
 import SearchFiltersToolbar from '../../../components/ui/SearchFiltersToolbar'
+import type { SearchFiltersToolbarControlProps } from '../../../components/ui/SearchFiltersToolbar'
 
-function ValidationToolbar() {
-	return (
-		<SearchFiltersToolbar
-			containerClassName="validation-toolbar"
-			ariaLabel="Búsqueda y filtros"
-			inputId="validation-search"
-			placeholder="Buscar"
-			initialFilters={['Estado: Pendiente', 'Tipo: Alumno', 'Alta reciente']}
-			availableFilters={[
-				'Estado: Pendiente',
-				'Estado: Revisado',
-				'Tipo: Alumno',
-				'Tipo: Egresado',
-				'Tipo: Empresa',
-				'Alta reciente',
-				'Con documento adjunto',
-				'Sin observaciones',
-			]}
-		/>
-	)
+function ValidationToolbar(props: SearchFiltersToolbarControlProps) {
+  return (
+    <SearchFiltersToolbar
+      {...props}
+      containerClassName="validation-toolbar"
+      ariaLabel="Busqueda y filtros de validacion"
+      inputId="validation-search"
+      placeholder="Buscar solicitante..."
+      availableFilters={[
+        'Estado: Pendiente',
+        'Tipo: Alumno',
+        'Tipo: Egresado',
+        'Tipo: Empresa',
+      ]}
+    />
+  )
 }
 
 export default ValidationToolbar

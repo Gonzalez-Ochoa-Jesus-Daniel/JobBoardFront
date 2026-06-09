@@ -1,5 +1,7 @@
 export const ROUTES = {
   LOGIN:            '/login',
+  RECUPERAR_PASSWORD: '/recuperar-password',
+  RESTABLECER_PASSWORD: '/reset-password',
   SELECCION_CUENTA: '/registro',
   DASHBOARD:        '/dashboard',
 

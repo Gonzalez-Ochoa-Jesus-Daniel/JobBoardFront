@@ -111,18 +111,7 @@ function TrackingList({ rows }: TrackingListProps) {
       </div>
 
       <footer className="tracking-pagination">
-        <span>Mostrando 4 postulaciones</span>
-        <div>
-          <button type="button" aria-label="Anterior">
-            {'<'}
-          </button>
-          <button type="button" className="is-current" aria-current="page">
-            1
-          </button>
-          <button type="button" aria-label="Siguiente">
-            {'>'}
-          </button>
-        </div>
+        <span>Mostrando {rows.length} postulaciones</span>
       </footer>
     </section>
   )

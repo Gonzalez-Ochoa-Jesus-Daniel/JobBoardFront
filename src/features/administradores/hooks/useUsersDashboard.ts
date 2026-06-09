@@ -3,7 +3,7 @@ import type { UserCard } from '../types/usersDashboard.types'
 import { useEstadisticasUsuarios } from './useAdmin'
 
 function useUsersDashboard() {
-  const { data: stats, isLoading, isError, error } = useEstadisticasUsuarios()
+  const { data: stats, isLoading, isError, error, refetch } = useEstadisticasUsuarios()
 
   const userCards = useMemo<UserCard[]>(() => {
     const totalEstudiantes = stats?.totalEstudiantes ?? 0
@@ -35,7 +35,7 @@ function useUsersDashboard() {
     ]
   }, [stats])
 
-  return { userCards, isLoading, isError, error }
+  return { userCards, isLoading, isError, error, refetch }
 }
 
 export default useUsersDashboard

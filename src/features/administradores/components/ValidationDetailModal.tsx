@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { Building2, CheckCircle2, GraduationCap, Mail, Phone, XCircle, X } from 'lucide-react'
+import { Building2, CheckCircle2, FileText, GraduationCap, Mail, Phone, XCircle, X } from 'lucide-react'
 import { APP_ICON_SIZE, APP_ICON_STROKE_WIDTH } from '../../../config/iconConfig'
 import type { ValidationRequest } from '../types/validation.types'
 import ValidationRejectionModal from '../components/ValidationRejectionModal'
+import ValidationDocuments from './ValidationDocuments'
+import useValidationDocuments from '../hooks/useValidationDocuments'
 
 type ValidationDetailModalProps = {
 	request: ValidationRequest | null
@@ -15,10 +17,20 @@ function ValidationDetailModal({ request, onClose, onValidate, isValidating = fa
 	const [isPhotoZoomOpen, setIsPhotoZoomOpen] = useState(false)
 	const [isAvatarZoomOpen, setIsAvatarZoomOpen] = useState(false)
 	const [isRejectModalOpen, setIsRejectModalOpen] = useState(false)
+	const { data: docsData, isLoading: isLoadingDocs, isError: isErrorDocs } =
+		useValidationDocuments(request?.id ?? null)
 
 	if (!request) {
 		return null
 	}
+
+	const documentos = docsData?.documentos ?? []
+	const profileDocument = documentos.find((documento) => {
+		const type = documento.tipo.toLowerCase()
+		return documento.categoria === 'imagen' && documento.url &&
+			(type.includes('foto de perfil') || type === 'logo')
+	})
+	const avatarUrl = profileDocument?.url ?? request.avatarPhoto
 
 	const handleClose = () => {
 		// Cierre centralizado para evitar overlays abiertos al cerrar el modal padre.
@@ -30,14 +42,15 @@ function ValidationDetailModal({ request, onClose, onValidate, isValidating = fa
 
 	const initial = request.fullName.charAt(0).toUpperCase()
 	const isCompany = request.type === 'Empresa'
-	const hasAvatarPhoto = !isCompany && Boolean(request.avatarPhoto)
+	const hasAvatarPhoto = Boolean(avatarUrl)
+	const hasValidationDocuments = documentos.some((documento) => Boolean(documento.url))
 	const hasProofPhoto = !isCompany && Boolean(request.evidencePhoto)
 	const DetailIcon = isCompany ? Building2 : GraduationCap
 
 	return (
 		<div className="validation-modal-overlay" role="presentation" onClick={handleClose}>
 			<article
-				className={`validation-modal ${hasProofPhoto ? 'has-proof-photo' : ''}`}
+				className={`validation-modal ${hasProofPhoto || hasValidationDocuments ? 'has-proof-photo' : ''}`}
 				role="dialog"
 				aria-modal="true"
 				onClick={(event) => event.stopPropagation()}
@@ -54,7 +67,7 @@ function ValidationDetailModal({ request, onClose, onValidate, isValidating = fa
 							onClick={() => setIsAvatarZoomOpen(true)}
 							aria-label={`Abrir foto de perfil de ${request.fullName}`}
 						>
-							<img src={request.avatarPhoto} alt={`Foto de perfil de ${request.fullName}`} />
+							<img src={avatarUrl} alt={`Foto de perfil de ${request.fullName}`} />
 						</button>
 					) : (
 						<span className={`validation-modal-avatar ${isCompany ? 'is-company' : 'is-grad'}`}>{initial}</span>
@@ -98,7 +111,15 @@ function ValidationDetailModal({ request, onClose, onValidate, isValidating = fa
 					</div>
 				</section>
 
-				{hasProofPhoto ? (
+				<section className={`validation-modal-data ${isCompany ? 'is-company' : 'is-grad'}`}>
+					<h3>
+						<FileText size={APP_ICON_SIZE} strokeWidth={APP_ICON_STROKE_WIDTH} />
+						Documentos para verificar
+					</h3>
+					<ValidationDocuments documentos={documentos} isLoading={isLoadingDocs} isError={isErrorDocs} />
+				</section>
+
+				{hasProofPhoto && !hasValidationDocuments ? (
 					<section className="validation-modal-proof">
 						<header>
 							<h3>Documento probatorio</h3>
@@ -189,7 +210,7 @@ function ValidationDetailModal({ request, onClose, onValidate, isValidating = fa
 						<X size={APP_ICON_SIZE} strokeWidth={APP_ICON_STROKE_WIDTH} />
 					</button>
 					<figure className="validation-photo-zoom is-avatar" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-						<img src={request.avatarPhoto} alt={`Vista ampliada de la foto de perfil de ${request.fullName}`} />
+						<img src={avatarUrl} alt={`Vista ampliada de la foto de perfil de ${request.fullName}`} />
 					</figure>
 				</div>
 			) : null}

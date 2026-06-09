@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useAppToast } from '@/shared/components/appToastContext'
+import { extractFileName, getPresignedUrl } from '@/services/filesService'
 import { estudianteService } from '../services/estudiante.service'
 import type { CurriculumData, EditContactFormData, StudentProfile } from '../types/profile.types'
 
@@ -27,10 +29,8 @@ const buildCurriculumData = (profile: StudentProfile): CurriculumData => {
     }
   }
 
-  const fileName = decodeURIComponent(profile.cvUrl.split('/').pop() || 'Curriculum del estudiante')
-
   return {
-    fileName,
+    fileName: extractFileName(profile.cvUrl) || 'Curriculum del estudiante',
     uploadDate: 'Disponible en perfil',
     url: profile.cvUrl,
   }
@@ -38,6 +38,7 @@ const buildCurriculumData = (profile: StudentProfile): CurriculumData => {
 
 export const useProfile = () => {
   const userId = getUserId()
+  const toast = useAppToast()
   const [isContactModalOpen, setIsContactModalOpen] = useState(false)
   const [contactOverrides, setContactOverrides] =
     useState<Partial<Pick<StudentProfile, 'phone' | 'email' | 'civilStatus' | 'address'>>>({})
@@ -73,12 +74,29 @@ export const useProfile = () => {
       civilStatus: data.civilStatus,
       address: data.address,
     })
+    toast.success('Contacto actualizado', 'Los datos se guardaron en esta vista.')
     setIsContactModalOpen(false)
   }
 
-  const handleDownloadCV = () => {
-    if (curriculumData.url) {
-      window.open(curriculumData.url, '_blank', 'noopener,noreferrer')
+  const handleDownloadCV = async () => {
+    if (!curriculumData.url) {
+      toast.info('CV no disponible', 'Este perfil todavia no tiene un archivo para consultar.')
+      return
+    }
+
+    const viewer = window.open('', '_blank')
+    if (!viewer) {
+      toast.warning('Ventana bloqueada', 'Permite ventanas emergentes para abrir el CV.')
+      return
+    }
+    viewer.opener = null
+
+    try {
+      const freshUrl = await getPresignedUrl(curriculumData.url)
+      viewer.location.href = freshUrl
+    } catch {
+      viewer.close()
+      toast.error('No se pudo abrir el CV', 'Intenta nuevamente en unos segundos.')
     }
   }
 

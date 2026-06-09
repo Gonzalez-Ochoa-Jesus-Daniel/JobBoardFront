@@ -13,6 +13,10 @@ const toValidationType = (rol: string): ValidationType => {
     return 'Empresa'
   }
 
+  if (rol === 'Egresado') {
+    return 'Egresado'
+  }
+
   return 'Alumno'
 }
 

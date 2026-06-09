@@ -6,6 +6,7 @@ import { ProfileHeaderBar } from '@/features/estudiantes/components/ProfileHeade
 import { StatusBadge } from '@/features/estudiantes/components/StatusBadge'
 import { EditContactModal } from '@/features/estudiantes/components/EditContactModal'
 import { useProfile } from '@/features/estudiantes/hooks/useProfile'
+import { ErrorState, LoadingState } from '@/shared/components/StateFeedback'
 
 export const EstudiantePerfilPage = () => {
   const {
@@ -35,16 +36,16 @@ export const EstudiantePerfilPage = () => {
       />
 
       <PageWrapper role="Estudiante">
-        <div className="flex h-screen flex-col overflow-hidden bg-white text-[#1d2538]">
+        <div className="flex min-h-full flex-col bg-white text-[#1d2538]">
           <ProfileHeaderBar />
 
         {isLoading ? (
-          <div className="flex flex-1 items-center justify-center">
-            <p className="text-sm text-slate-400">Cargando perfil...</p>
+          <div className="flex-1 p-6">
+            <LoadingState title="Cargando perfil" message="Estamos consultando tu informacion." />
           </div>
         ) : isError ? (
-          <div className="flex flex-1 items-center justify-center">
-            <p className="text-sm text-red-400">Error al cargar el perfil. Intenta de nuevo.</p>
+          <div className="flex-1 p-6">
+            <ErrorState title="Error al cargar el perfil" message="Intenta actualizar la pagina." />
           </div>
         ) : (
         <div className="flex-1 overflow-y-auto">

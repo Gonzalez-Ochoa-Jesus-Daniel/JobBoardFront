@@ -8,7 +8,7 @@ import type { ConfigurationListKey } from '../types/configuration.types'
 
 function useConfigurationOverview() {
   const queryClient = useQueryClient()
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'configuration', 'overview'],
     queryFn: () => getConfigurationOverview(),
   })
@@ -35,6 +35,7 @@ function useConfigurationOverview() {
     isLoading,
     isError,
     error,
+    refetch,
     createItem: createMutation.mutateAsync,
     deleteItem: deleteMutation.mutateAsync,
     isSaving: createMutation.isPending || deleteMutation.isPending,

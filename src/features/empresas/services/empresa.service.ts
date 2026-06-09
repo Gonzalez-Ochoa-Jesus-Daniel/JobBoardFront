@@ -5,7 +5,25 @@ import type {
   CreateVacanteRequest,
   UpdateEstatusRequest,
   Postulante,
+  PostulanteApi,
 } from '../types/empresa.types'
+
+const mapPostulante = (postulante: PostulanteApi): Postulante => ({
+  id: postulante.estudianteId,
+  postulacionId: postulante.postulacionId,
+  nombre: postulante.nombreCompleto,
+  email: postulante.email,
+  telefono: postulante.telefono,
+  carrera: postulante.carrera,
+  matricula: postulante.matricula,
+  estatusAcademico: postulante.estatusAcademico,
+  tipoUsuario: postulante.estatusAcademico || 'Estudiante',
+  estatus: postulante.estatusPostulacion,
+  descripcion: '',
+  fotoUrl: postulante.fotoUrl,
+  cvUrl: postulante.cvUrl,
+  urlExpirationSeconds: postulante.urlExpirationSeconds,
+})
 
 export const empresaService = {
 
@@ -27,7 +45,19 @@ export const empresaService = {
   actualizarEstatusVacante: (publicacionId: number, data: UpdateEstatusRequest): Promise<void> =>
     api.put(`/empresa/vacantes/${publicacionId}/estatus`, data) as Promise<void>,
 
-  getPostulantes: (empresaId: number, publicacionId: number): Promise<Postulante[]> =>
-    api.get(`/empresa/${empresaId}/vacantes/${publicacionId}/postulantes`) as Promise<Postulante[]>,
+  getPostulantes: async (empresaId: number, publicacionId: number): Promise<Postulante[]> => {
+    const response = await api.get(
+      `/empresa/${empresaId}/vacantes/${publicacionId}/postulantes`
+    ) as unknown as PostulanteApi[]
+
+    return response.map(mapPostulante)
+  },
+
+  actualizarEstatusPostulante: (
+    empresaId: number,
+    postulacionId: number,
+    estatus: string
+  ): Promise<void> =>
+    api.put(`/empresa/${empresaId}/postulaciones/${postulacionId}/estatus`, { estatus }) as Promise<void>,
 
 }

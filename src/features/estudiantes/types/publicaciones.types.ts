@@ -1,3 +1,17 @@
+export interface Vacante {
+  id: number
+  empresaId: number
+  nombreEmpresa: string
+  empresaLogoUrl: string | null
+  titulo: string
+  descripcion: string
+  requisitos: string | null
+  sueldoAprox: number | null
+  modalidad: string
+  fechaPublicacion: string
+  totalPostulantes: number
+}
+
 export interface JobCardItem {
   id: number
   title: string

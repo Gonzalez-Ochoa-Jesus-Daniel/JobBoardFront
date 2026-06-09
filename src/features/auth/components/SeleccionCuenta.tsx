@@ -1,167 +1,145 @@
-import { useState } from 'react'
+import { type CSSProperties, type MouseEvent, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { GraduationCap, Briefcase, Building2, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, BriefcaseBusiness, Building2, CheckCircle2, GraduationCap, ShieldCheck } from 'lucide-react'
 import campusImg from '@/assets/images/campus.png'
+import { AppButton } from '@/shared/components/AppButton'
+import { ROUTES } from '@/router/routes'
+import './auth-flow.css'
 
 type TipoCuenta = 'egresado' | 'estudiante' | 'empresa' | null
+
+type SpotlightStyle = CSSProperties & {
+  '--spotlight-x'?: string
+  '--spotlight-y'?: string
+}
 
 const tarjetas = [
   {
     tipo: 'egresado' as TipoCuenta,
     titulo: 'Egresado',
-    descripcion: 'Registro para egresados buscando oportunidades',
+    descripcion: 'Crea tu perfil profesional y consulta oportunidades para egresados.',
     icono: GraduationCap,
   },
   {
     tipo: 'estudiante' as TipoCuenta,
     titulo: 'Estudiante',
-    descripcion: 'Registro para estudiantes buscando oportunidades',
-    icono: Briefcase,
+    descripcion: 'Encuentra vacantes, practicas y oportunidades activas.',
+    icono: BriefcaseBusiness,
   },
   {
     tipo: 'empresa' as TipoCuenta,
     titulo: 'Empresa',
-    descripcion: 'Registro de empresas',
+    descripcion: 'Registra tu empresa para publicar vacantes validadas.',
     icono: Building2,
   },
 ]
 
 const pasos = [
-  'Selección de tipo de cuenta',
-  'Registro de Datos',
-  'Confirmación',
-  'Validación de Perfil',
+  'Tipo de cuenta',
+  'Registro de datos',
+  'Confirmacion',
+  'Validacion de perfil',
 ]
 
+const updateSpotlight = (event: MouseEvent<HTMLElement>) => {
+  const rect = event.currentTarget.getBoundingClientRect()
+  const style = event.currentTarget.style as CSSStyleDeclaration
+  style.setProperty('--spotlight-x', `${event.clientX - rect.left}px`)
+  style.setProperty('--spotlight-y', `${event.clientY - rect.top}px`)
+}
+
 export const SeleccionCuenta = () => {
-  const [seleccionado, setSeleccionado] = useState<TipoCuenta>(null)
+  const [seleccionado, setSeleccionado] = useState<TipoCuenta>('estudiante')
   const navigate = useNavigate()
 
   const handleContinuar = () => {
     if (!seleccionado) return
-    if (seleccionado === 'empresa') {
-      navigate('/registro/empresa')
-    } else {
-      navigate('/registro/estudiante')
-    }
+    navigate(seleccionado === 'empresa' ? '/registro/empresa' : '/registro/estudiante')
   }
 
   return (
-    <div className="h-screen w-full overflow-y-auto">
-      <div
-        className="min-h-screen w-full flex items-center justify-center bg-cover bg-center relative"
-        style={{ backgroundImage: `url(${campusImg})` }}
-      >
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-black/20" />
+    <main className="auth-page" style={{ backgroundImage: `url(${campusImg})` }}>
+      <div className="auth-page__shade">
+        <section className="auth-panel p-5 sm:p-7 lg:p-9" aria-labelledby="seleccion-cuenta-title">
+          <div className="mb-7 flex items-start justify-between gap-4">
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.LOGIN)}
+              className="auth-back-button"
+              aria-label="Volver al inicio de sesion"
+            >
+              <ArrowLeft size={18} />
+            </button>
 
-        {/* Contenedor principal */}
-        <div className="relative z-10 bg-white rounded-3xl shadow-xl w-[85%] max-w-4xl p-8">
-
-          {/* Boton regresar */}
-          <button
-            onClick={() => navigate('/login')}
-            className="absolute top-5 left-5 w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors text-gray-600"
-          >
-            ←
-          </button>
-
-          {/* Stepper */}
-          <div className="flex items-start justify-center gap-2 mb-8 px-8">
-            {pasos.map((paso, index) => (
-              <div key={paso} className="flex items-center gap-2">
-                <div className="flex flex-col items-center gap-1">
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
-                    index === 0
-                      ? 'bg-[#009A4D] text-white'
-                      : 'bg-gray-200 text-gray-400'
-                  }`}>
-                    {index === 0
-                      ? <CheckCircle2 size={20} />
-                      : <span className="text-sm font-bold">{index + 1}</span>
-                    }
-                  </div>
-                  <span className={`text-xs text-center w-24 leading-tight ${
-                    index === 0 ? 'text-[#009A4D] font-semibold' : 'text-gray-400'
-                  }`}>
-                    {paso}
+            <div className="auth-stepper flex-1">
+              {pasos.map((paso, index) => (
+                <div key={paso} className={`auth-step ${index === 0 ? 'is-complete' : ''}`}>
+                  <span className="auth-step__dot">
+                    {index === 0 ? <CheckCircle2 size={20} /> : index + 1}
                   </span>
+                  <span className="auth-step__label">{paso}</span>
                 </div>
-                {index < pasos.length - 1 && (
-                  <div className={`w-16 h-1 rounded mb-5 ${
-                    index === 0 ? 'bg-[#009A4D]' : 'bg-gray-200'
-                  }`} />
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
-          {/* Titulo */}
-          <h1 className="text-4xl font-bold text-center text-gray-800 mb-2">
-            Bienvenido
-          </h1>
-          <p className="text-center text-gray-500 text-base mb-8">
-            Por favor selecciona tu tipo de usuario para continuar...
-          </p>
+          <div className="mx-auto mb-8 max-w-2xl text-center">
+            <p className="auth-eyebrow mx-auto">Registro de acceso</p>
+            <h1 id="seleccion-cuenta-title" className="mt-4 text-3xl font-black text-slate-950 sm:text-4xl">
+              Elige como quieres entrar
+            </h1>
+            <p className="mt-3 text-sm leading-6 text-slate-500 sm:text-base">
+              Selecciona el perfil correcto para preparar el registro con los datos y validaciones que necesita cada usuario.
+            </p>
+          </div>
 
-          {/* Tarjetas */}
-          <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="grid gap-4 lg:grid-cols-3">
             {tarjetas.map((tarjeta) => {
               const Icono = tarjeta.icono
               const activo = seleccionado === tarjeta.tipo
+              const style: SpotlightStyle = {}
+
               return (
                 <button
                   key={tarjeta.tipo}
+                  type="button"
                   onClick={() => setSeleccionado(tarjeta.tipo)}
-                  className={`flex flex-col items-center p-6 rounded-2xl border-4 transition-all ${
-                    activo
-                      ? 'border-[#009A4D] bg-[#009A4D]'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
+                  onMouseMove={updateSpotlight}
+                  className={`auth-spotlight auth-account-card flex flex-col items-start p-5 text-left ${activo ? 'is-active' : ''}`}
+                  style={style}
+                  aria-pressed={activo}
                 >
-                  {/* Icono */}
-                  <div className={`w-16 h-16 rounded-xl flex items-center justify-center mb-3 transition-colors ${
-                    activo ? 'bg-[#009A4D]' : 'bg-gray-200'
-                  }`}>
-                    <Icono size={32} color={activo ? 'white' : '#9ca3af'} />
-                  </div>
-
-                  {/* Titulo */}
-                  <p className={`text-xl font-bold mb-1 ${
-                    activo ? 'text-white' : 'text-gray-500'
-                  }`}>
-                    {tarjeta.titulo}
-                  </p>
-
-                  {/* Descripcion */}
-                  <p className={`text-center text-xs leading-tight ${
-                    activo ? 'text-white/80' : 'text-gray-400'
-                  }`}>
+                  <span className={`mb-5 grid h-14 w-14 place-items-center rounded-2xl ${activo ? 'bg-white/16 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                    <Icono size={30} />
+                  </span>
+                  <span className="text-2xl font-black">{tarjeta.titulo}</span>
+                  <span className={`mt-2 text-sm leading-6 ${activo ? 'text-white/84' : 'text-slate-500'}`}>
                     {tarjeta.descripcion}
-                  </p>
-
-                  {/* Linea indicador */}
-                  <div className={`mt-3 h-1.5 w-16 rounded-full transition-colors ${
-                    activo ? 'bg-[#009A4D]' : 'bg-gray-200'
-                  }`} />
+                  </span>
                 </button>
               )
             })}
           </div>
 
-          {/* Boton continuar */}
-          <div className="flex justify-end">
-            <button
-              onClick={handleContinuar}
-              disabled={!seleccionado}
-              className="bg-[#009A4D] hover:bg-[#10B981] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold text-lg px-10 py-3 rounded-xl transition-colors"
-            >
-              Continuar
-            </button>
-          </div>
+          <div className="mt-8 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-emerald-600 shadow-sm">
+                <ShieldCheck size={20} />
+              </span>
+              <div>
+                <p className="text-sm font-black text-slate-900">Validacion segura antes de publicar o postular</p>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  La plataforma revisa perfiles para mantener oportunidades confiables para la comunidad.
+                </p>
+              </div>
+            </div>
 
-        </div>
+            <AppButton onClick={handleContinuar} disabled={!seleccionado} className="sm:min-w-40">
+              Continuar
+            </AppButton>
+          </div>
+        </section>
       </div>
-    </div>
+    </main>
   )
 }

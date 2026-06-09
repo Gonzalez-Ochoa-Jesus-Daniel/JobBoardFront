@@ -1,0 +1,101 @@
+::selection {
+  background: rgba(0, 154, 77, 0.18);
+  color: #0f172a;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  transition-duration: 180ms;
+  transition-timing-function: var(--ease-standard);
+}
+
+button,
+a {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+}
+
+input,
+select,
+textarea {
+  transition-property: border-color, box-shadow, background-color;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(0, 154, 77, 0.22);
+  outline-offset: 3px;
+}
+
+.hero-panel,
+.summary-card,
+.panel,
+.publication-card,
+.management-table-wrap,
+.validation-table-wrap,
+.table-wrap,
+.auth-section-card,
+.state-feedback,
+.landing-proof {
+  animation: ui-enter 420ms var(--ease-standard) both;
+}
+
+.summary-card,
+.panel,
+.publication-card,
+.management-table-wrap,
+.validation-table-wrap,
+.auth-section-card,
+.state-feedback,
+.landing-company,
+.user-card {
+  transition: border-color 180ms var(--ease-standard), box-shadow 180ms var(--ease-standard), transform 180ms var(--ease-standard), background-color 180ms var(--ease-standard);
+}
+
+.summary-card:hover,
+.panel:hover,
+.publication-card:hover,
+.management-table-wrap:hover,
+.validation-table-wrap:hover,
+.auth-section-card:hover,
+.user-card:hover {
+  border-color: rgba(0, 154, 77, 0.18);
+  box-shadow: var(--shadow-soft);
+}
+
+.summary-card:hover,
+.publication-card:hover,
+.auth-section-card:hover,
+.user-card:hover {
+  transform: translateY(-2px);
+}
+
+.panel-kicker,
+.eyebrow,
+.landing-section-heading span,
+.landing-proof__label {
+  letter-spacing: 0.04em;
+}
+
+@keyframes ui-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
+}

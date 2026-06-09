@@ -2,12 +2,19 @@ import { Filter, Search, SlidersHorizontal, X } from 'lucide-react'
 import { useState } from 'react'
 import { APP_ICON_SIZE, APP_ICON_STROKE_WIDTH } from '../../config/iconConfig'
 
-type SearchFiltersToolbarProps = {
+export type SearchFiltersToolbarControlProps = {
+  searchValue?: string
+  filters?: string[]
+  resultCount?: number
+  onSearchChange?: (value: string) => void
+  onFiltersChange?: (filters: string[]) => void
+}
+
+type SearchFiltersToolbarProps = SearchFiltersToolbarControlProps & {
   containerClassName: string
   ariaLabel: string
   inputId: string
   placeholder: string
-  initialFilters: string[]
   availableFilters: string[]
 }
 
@@ -16,17 +23,34 @@ function SearchFiltersToolbar({
   ariaLabel,
   inputId,
   placeholder,
-  initialFilters,
   availableFilters,
+  searchValue,
+  filters,
+  resultCount,
+  onSearchChange,
+  onFiltersChange,
 }: SearchFiltersToolbarProps) {
-  // Estado local temporal hasta conectar filtros reales con API/query params.
   const [showFiltersPanel, setShowFiltersPanel] = useState(false)
-  const [appliedFilters, setAppliedFilters] = useState(initialFilters)
+  const [internalSearchValue, setInternalSearchValue] = useState('')
+  const [internalFilters, setInternalFilters] = useState<string[]>([])
+  const currentSearchValue = searchValue ?? internalSearchValue
+  const appliedFilters = filters ?? internalFilters
+
+  const handleSearchChange = (value: string) => {
+    setInternalSearchValue(value)
+    onSearchChange?.(value)
+  }
+
+  const updateFilters = (nextFilters: string[]) => {
+    setInternalFilters(nextFilters)
+    onFiltersChange?.(nextFilters)
+  }
 
   const handleToggleFilter = (filterName: string) => {
-    // Toggle simple para mostrar la UX de filtros activos.
-    setAppliedFilters((current) =>
-      current.includes(filterName) ? current.filter((item) => item !== filterName) : [...current, filterName],
+    updateFilters(
+      appliedFilters.includes(filterName)
+        ? appliedFilters.filter((item) => item !== filterName)
+        : [...appliedFilters, filterName],
     )
   }
 
@@ -35,7 +59,14 @@ function SearchFiltersToolbar({
       <section className={containerClassName} aria-label={ariaLabel}>
         <label className="validation-search" htmlFor={inputId}>
           <Search size={APP_ICON_SIZE} strokeWidth={APP_ICON_STROKE_WIDTH} />
-          <input id={inputId} type="text" placeholder={placeholder} />
+          <input
+            id={inputId}
+            type="search"
+            placeholder={placeholder}
+            value={currentSearchValue}
+            onChange={(event) => handleSearchChange(event.target.value)}
+          />
+          {typeof resultCount === 'number' ? <span className="search-results-count">{resultCount}</span> : null}
         </label>
 
         <button
@@ -105,7 +136,7 @@ function SearchFiltersToolbar({
             <button
               type="button"
               className="filters-preview-clear"
-              onClick={() => setAppliedFilters([])}
+              onClick={() => updateFilters([])}
               disabled={appliedFilters.length === 0}
             >
               Limpiar filtros

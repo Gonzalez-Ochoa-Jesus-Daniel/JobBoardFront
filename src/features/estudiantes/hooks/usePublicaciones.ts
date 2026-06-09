@@ -1,148 +1,111 @@
-import { useEffect, useRef, useState } from 'react'
-import type { JobCardItem, SearchPublicationItem } from '../types/publicaciones.types'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { publicacionesService } from '../services/publicaciones.service'
+import type { JobCardItem, SearchPublicationItem, Vacante } from '../types/publicaciones.types'
 
-// TODO API: cambiar a false cuando se quiera consumir backend real.
-const USE_STATIC_DATA = true
+const getUserId = () => Number(localStorage.getItem('userId'))
 
-// MOCK_DATA (retirar al conectar API): listado lateral de vacantes.
-const MOCK_LIST_ITEMS: JobCardItem[] = [
-  {
-    id: 1,
-    title: 'Desarrollador Frontend',
-    company: 'Volkswagen',
-    location: 'Puebla',
-    salary: '$ 45,000 - $ 75,000',
-    modality: 'Tiempo completo',
-  },
-  {
-    id: 2,
-    title: 'Desarrollador Frontend',
-    company: 'Volkswagen',
-    location: 'Puebla',
-    salary: '$ 45,000 - $ 75,000',
-    modality: 'Tiempo completo',
-  },
-  {
-    id: 3,
-    title: 'Desarrollador Frontend',
-    company: 'Volkswagen',
-    location: 'Puebla',
-    salary: '$ 45,000 - $ 75,000',
-    modality: 'Tiempo completo',
-  },
-  {
-    id: 4,
-    title: 'Desarrollador Frontend',
-    company: 'Volkswagen',
-    location: 'Puebla',
-    salary: '$ 45,000 - $ 75,000',
-    modality: 'Tiempo completo',
-  },
-]
+const formatSalary = (value: number | null): string =>
+  typeof value === 'number' && value > 0 ? `$ ${value.toLocaleString('es-MX')}` : 'Sueldo no especificado'
 
-// MOCK_DATA (retirar al conectar API): resultados del modo busqueda.
-const MOCK_SEARCH_PUBLICATION_ITEMS: SearchPublicationItem[] = [
-  {
-    id: 1,
-    title: 'Programador Senior',
-    location: 'Tecamachalco Pue., 20 Oriente 4302, La villita, 75482',
-    description:
-      'En Audi buscamos un experto para liderar la arquitectura de nuestra plataforma SaaS y escalar nuestros microservicios.',
-    typeTag: 'Tiempo completo',
-    salaryTag: '$ 25,000 - $ 35,000',
-    timeAgo: 'Hace 22 Horas',
-  },
-  {
-    id: 2,
-    title: 'Programador Senior',
-    location: 'Tecamachalco Pue., 20 Oriente 4302, La villita, 75482',
-    description:
-      'En Audi buscamos un experto para liderar la arquitectura de nuestra plataforma SaaS y escalar nuestros microservicios.',
-    typeTag: 'Tiempo completo',
-    salaryTag: '$ 25,000 - $ 35,000',
-    timeAgo: 'Hace 22 Horas',
-  },
-  {
-    id: 3,
-    title: 'Programador Senior',
-    location: 'Tecamachalco Pue., 20 Oriente 4302, La villita, 75482',
-    description:
-      'En Audi buscamos un experto para liderar la arquitectura de nuestra plataforma SaaS y escalar nuestros microservicios.',
-    typeTag: 'Tiempo completo',
-    salaryTag: '$ 25,000 - $ 35,000',
-    timeAgo: 'Hace 22 Horas',
-  },
-  {
-    id: 4,
-    title: 'Programador Senior',
-    location: 'Tecamachalco Pue., 20 Oriente 4302, La villita, 75482',
-    description:
-      'En Audi buscamos un experto para liderar la arquitectura de nuestra plataforma SaaS y escalar nuestros microservicios.',
-    typeTag: 'Tiempo completo',
-    salaryTag: '$ 25,000 - $ 35,000',
-    timeAgo: 'Hace 22 Horas',
-  },
-]
+const formatDate = (iso: string): string => {
+  const date = new Date(iso)
+
+  if (Number.isNaN(date.getTime())) return ''
+
+  return new Intl.DateTimeFormat('es-MX', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(date)
+}
+
+const toJobCardItem = (vacante: Vacante): JobCardItem => ({
+  id: vacante.id,
+  title: vacante.titulo,
+  company: vacante.nombreEmpresa,
+  location: vacante.modalidad,
+  salary: formatSalary(vacante.sueldoAprox),
+  modality: vacante.modalidad,
+})
+
+const toSearchItem = (vacante: Vacante): SearchPublicationItem => ({
+  id: vacante.id,
+  title: vacante.titulo,
+  location: vacante.nombreEmpresa,
+  description: vacante.descripcion,
+  typeTag: vacante.modalidad,
+  salaryTag: formatSalary(vacante.sueldoAprox),
+  timeAgo: formatDate(vacante.fechaPublicacion),
+})
+
+export type ApplyFeedback = {
+  type: 'ok' | 'error'
+  message: string
+}
 
 export const usePublicaciones = () => {
-  // --------------------------------------------------
-  // Estado base de UI
-  // --------------------------------------------------
+  const userId = getUserId()
+  const queryClient = useQueryClient()
   const [viewMode, setViewMode] = useState<'detail' | 'search'>('detail')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchText, setSearchText] = useState('')
-  const [listItems, setListItems] = useState<JobCardItem[]>(MOCK_LIST_ITEMS)
-  const [searchPublicationItems, setSearchPublicationItems] =
-    useState<SearchPublicationItem[]>(MOCK_SEARCH_PUBLICATION_ITEMS)
+  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [appliedIds, setAppliedIds] = useState<number[]>([])
+  const [feedback, setFeedback] = useState<ApplyFeedback | null>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
 
-  // --------------------------------------------------
-  // Efecto UI: focus automatico al abrir buscador
-  // --------------------------------------------------
   useEffect(() => {
-    if (isSearchOpen) {
-      searchInputRef.current?.focus()
-    }
+    if (isSearchOpen) searchInputRef.current?.focus()
   }, [isSearchOpen])
 
-  // --------------------------------------------------
-  // Carga de datos (API o mock)
-  // --------------------------------------------------
-  useEffect(() => {
-    if (USE_STATIC_DATA) return
+  const { data: vacantes = [], isLoading, isError } = useQuery({
+    queryKey: ['estudiante', 'vacantes'],
+    queryFn: () => publicacionesService.getVacantes(),
+  })
 
-    let isCancelled = false
+  const vacantesFiltradas = useMemo(() => {
+    const term = searchText.trim().toLowerCase()
 
-    const loadPublicacionesData = async () => {
-      try {
-        const [listResponse, searchResponse] = await Promise.all([
-          publicacionesService.getListItems(),
-          publicacionesService.getSearchPublicationItems(),
-        ])
+    if (!term) return vacantes
 
-        if (isCancelled) return
+    return vacantes.filter((vacante) =>
+      [vacante.titulo, vacante.nombreEmpresa, vacante.descripcion, vacante.modalidad]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(term))
+    )
+  }, [vacantes, searchText])
 
-        setListItems(listResponse.length ? listResponse : MOCK_LIST_ITEMS)
-        setSearchPublicationItems(
-          searchResponse.length ? searchResponse : MOCK_SEARCH_PUBLICATION_ITEMS
-        )
-      } catch (error) {
-        console.error('Error al cargar publicaciones desde API:', error)
-        if (isCancelled) return
+  const selectedVacante = useMemo<Vacante | null>(() => {
+    if (vacantes.length === 0) return null
 
-        // Fallback temporal mientras se integra backend.
-        setListItems(MOCK_LIST_ITEMS)
-        setSearchPublicationItems(MOCK_SEARCH_PUBLICATION_ITEMS)
+    return vacantes.find((vacante) => vacante.id === selectedId) ?? vacantes[0]
+  }, [vacantes, selectedId])
+
+  const listItems = useMemo(() => vacantesFiltradas.map(toJobCardItem), [vacantesFiltradas])
+  const searchPublicationItems = useMemo(() => vacantesFiltradas.map(toSearchItem), [vacantesFiltradas])
+
+  const postularMutation = useMutation({
+    mutationFn: (publicacionId: number) => {
+      if (!userId) {
+        return Promise.reject(new Error('No se encontro la sesion del estudiante.'))
       }
-    }
 
-    void loadPublicacionesData()
-
-    return () => {
-      isCancelled = true
-    }
-  }, [])
+      return publicacionesService.postular(userId, publicacionId)
+    },
+    onSuccess: (_data, publicacionId) => {
+      setAppliedIds((current) => (
+        current.includes(publicacionId) ? current : [...current, publicacionId]
+      ))
+      setFeedback({ type: 'ok', message: 'Tu postulacion fue enviada correctamente.' })
+      queryClient.invalidateQueries({ queryKey: ['estudiante', 'postulaciones'] })
+      queryClient.invalidateQueries({ queryKey: ['estudiante', 'vacantes'] })
+    },
+    onError: (error: unknown) => {
+      const message = (error as { message?: string })?.message ?? 'No se pudo enviar la postulacion.'
+      setFeedback({ type: 'error', message })
+    },
+  })
 
   const openSearchMode = () => {
     setIsSearchOpen(true)
@@ -151,10 +114,12 @@ export const usePublicaciones = () => {
 
   const closeSearchMode = () => {
     setIsSearchOpen(false)
-    window.setTimeout(() => {
-      setViewMode('detail')
-    }, 220)
+    window.setTimeout(() => setViewMode('detail'), 220)
   }
+
+  const clearFeedback = useCallback(() => {
+    setFeedback(null)
+  }, [])
 
   return {
     viewMode,
@@ -163,8 +128,17 @@ export const usePublicaciones = () => {
     searchInputRef,
     listItems,
     searchPublicationItems,
+    selectedVacante,
+    isLoading,
+    isError,
+    isApplying: postularMutation.isPending,
+    appliedIds,
+    feedback,
     openSearchMode,
     closeSearchMode,
     setSearchText,
+    selectVacante: setSelectedId,
+    postular: (publicacionId: number) => postularMutation.mutate(publicacionId),
+    clearFeedback,
   }
 }

@@ -4,7 +4,7 @@ import { getPublicationsOverview } from '../services/publicacionesService'
 import type { PublicacionEstatusAdmin } from '../types/admin.types'
 
 function usePublicationsOverview() {
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'publications', 'overview'],
     queryFn: () => getPublicationsOverview(),
   })
@@ -17,6 +17,7 @@ function usePublicationsOverview() {
     isLoading,
     isError,
     error,
+    refetch,
   }
 }
 

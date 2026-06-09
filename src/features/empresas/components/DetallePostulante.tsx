@@ -1,8 +1,8 @@
-import { useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, CalendarCheck, CheckCircle2, Mail, MapPin, Phone, XCircle } from 'lucide-react'
+import { ArrowLeft, CalendarCheck, CheckCircle2, FileText, GraduationCap, Mail, MapPin, Phone, XCircle } from 'lucide-react'
 import { ROUTES } from '@/router/routes'
-import { usePostulantes } from '../hooks/useEmpresa'
+import { useAppToast } from '@/shared/components/appToastContext'
+import { useActualizarEstatusPostulante, usePostulantes } from '../hooks/useEmpresa'
 
 export const DetallePostulante = () => {
   const navigate = useNavigate()
@@ -10,13 +10,15 @@ export const DetallePostulante = () => {
   const [searchParams] = useSearchParams()
   const postulanteId = Number(id)
   const vacanteId = Number(searchParams.get('vacanteId'))
-  const [estatusOverride, setEstatusOverride] = useState<{ postulanteId: number; estatus: string } | null>(null)
+  const toast = useAppToast()
 
   const {
     data: postulantes = [],
     isLoading,
     isError,
   } = usePostulantes(vacanteId)
+
+  const { mutate: cambiarEstatus, isPending: isUpdating } = useActualizarEstatusPostulante(vacanteId)
 
   const postulante = postulantes.find((item) => item.id === postulanteId)
 
@@ -42,9 +44,27 @@ export const DetallePostulante = () => {
     )
   }
 
-  const estatusActual = estatusOverride?.postulanteId === postulante.id
-    ? estatusOverride.estatus
-    : postulante.estatus
+  const estatusActual = postulante.estatus
+
+  const aplicarEstatus = (estatus: string) => {
+    if (!postulante.postulacionId) {
+      toast.warning('No se encontro la postulacion', 'Abre el postulante desde una vacante publicada.')
+      return
+    }
+
+    cambiarEstatus(
+      { postulacionId: postulante.postulacionId, estatus },
+      {
+        onSuccess: () => {
+          toast.success('Estatus actualizado', `El postulante paso a ${estatus}.`)
+        },
+        onError: (error: unknown) => {
+          const message = (error as { message?: string })?.message ?? 'Intenta de nuevo en unos segundos.'
+          toast.error('No se pudo actualizar', message)
+        },
+      }
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -57,32 +77,45 @@ export const DetallePostulante = () => {
             >
               <ArrowLeft size={18} />
             </button>
+            {postulante.fotoUrl ? (
+              <img
+                src={postulante.fotoUrl}
+                alt={postulante.nombre}
+                className="h-14 w-14 rounded-full object-cover ring-2 ring-white/60"
+              />
+            ) : null}
             <div>
               <h1 className="text-2xl font-semibold">{postulante.nombre}</h1>
               <p className="text-sm text-white/80">Estatus: {estatusActual}</p>
+              {postulante.carrera ? (
+                <p className="text-sm text-white/70">{postulante.carrera}</p>
+              ) : null}
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => setEstatusOverride({ postulanteId: postulante.id, estatus: 'Entrevista' })}
-              className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-emerald-600"
+              onClick={() => aplicarEstatus('Entrevista')}
+              disabled={isUpdating}
+              className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-emerald-600 disabled:opacity-60"
             >
               <CalendarCheck size={16} />
               Entrevista
             </button>
             <button
               type="button"
-              onClick={() => setEstatusOverride({ postulanteId: postulante.id, estatus: 'Aprobado' })}
-              className="flex items-center gap-2 rounded-full border border-white/40 px-4 py-2 text-sm font-semibold text-white"
+              onClick={() => aplicarEstatus('Aceptada')}
+              disabled={isUpdating}
+              className="flex items-center gap-2 rounded-full border border-white/40 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               <CheckCircle2 size={16} />
               Aprobar
             </button>
             <button
               type="button"
-              onClick={() => setEstatusOverride({ postulanteId: postulante.id, estatus: 'Rechazado' })}
-              className="flex items-center gap-2 rounded-full border border-white/40 px-4 py-2 text-sm font-semibold text-white"
+              onClick={() => aplicarEstatus('Rechazada')}
+              disabled={isUpdating}
+              className="flex items-center gap-2 rounded-full border border-white/40 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               <XCircle size={16} />
               Rechazar
@@ -118,6 +151,41 @@ export const DetallePostulante = () => {
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-100">
         <h2 className="text-lg font-semibold text-gray-800 mb-2">Resumen</h2>
         <p className="text-sm text-gray-600">{postulante.descripcion || 'Sin descripcion adicional.'}</p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+          <div className="flex items-center gap-2 text-emerald-500">
+            <GraduationCap size={16} />
+            <p className="text-xs font-semibold uppercase">Datos academicos</p>
+          </div>
+          <p className="mt-2 text-sm text-gray-700">
+            <span className="font-semibold">Matricula:</span> {postulante.matricula || 'Sin dato'}
+          </p>
+          <p className="text-sm text-gray-700">
+            <span className="font-semibold">Estatus:</span> {postulante.estatusAcademico || 'Estudiante'}
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+          <div className="flex items-center gap-2 text-orange-500">
+            <FileText size={16} />
+            <p className="text-xs font-semibold uppercase">Curriculum</p>
+          </div>
+          {postulante.cvUrl ? (
+            <a
+              href={postulante.cvUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center gap-2 rounded-lg border border-emerald-500 px-4 py-2 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-500 hover:text-white"
+            >
+              <FileText size={16} />
+              Ver / descargar CV
+            </a>
+          ) : (
+            <p className="mt-3 text-sm text-gray-400">El candidato no ha subido CV.</p>
+          )}
+        </div>
       </div>
     </div>
   )

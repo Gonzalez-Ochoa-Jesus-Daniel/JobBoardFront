@@ -1,25 +1,23 @@
 import SearchFiltersToolbar from '../../../components/ui/SearchFiltersToolbar'
+import type { SearchFiltersToolbarControlProps } from '../../../components/ui/SearchFiltersToolbar'
 
-function ManagementToolbar() {
-	return (
-		<SearchFiltersToolbar
-			containerClassName="management-toolbar"
-			ariaLabel="Búsqueda y filtros de gestión"
-			inputId="management-search"
-			placeholder="Buscar usuarios..."
-			initialFilters={['Estado: Activo', 'Tipo: Empresa', 'Registro: Últimos 7 días']}
-			availableFilters={[
-				'Estado: Activo',
-				'Estado: Inactivo',
-				'Tipo: Alumno',
-				'Tipo: Egresado',
-				'Tipo: Empresa',
-				'Registro: Últimos 7 días',
-				'Registro: Últimos 30 días',
-				'Con actividad reciente',
-			]}
-		/>
-	)
+function ManagementToolbar(props: SearchFiltersToolbarControlProps) {
+  return (
+    <SearchFiltersToolbar
+      {...props}
+      containerClassName="management-toolbar"
+      ariaLabel="Busqueda y filtros de gestion"
+      inputId="management-search"
+      placeholder="Buscar usuarios..."
+      availableFilters={[
+        'Estado: Activo',
+        'Estado: Inactivo',
+        'Tipo: Alumno',
+        'Tipo: Egresado',
+        'Tipo: Empresa',
+      ]}
+    />
+  )
 }
 
 export default ManagementToolbar

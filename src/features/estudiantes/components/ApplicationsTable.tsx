@@ -1,4 +1,5 @@
 import { Eye } from 'lucide-react'
+import { EmptyState } from '@/shared/components/StateFeedback'
 import type { Application } from '../types/seguimiento.types'
 
 interface ApplicationsTableProps {
@@ -110,9 +111,41 @@ const getTimelineSegmentClass = (status: string, stepIndex: number) => {
 }
 
 export const ApplicationsTable = ({ applications, onViewDetails }: ApplicationsTableProps) => {
+  if (!applications.length) {
+    return <EmptyState title="No hay postulaciones para mostrar" message="Tus aplicaciones apareceran aqui cuando postules a una vacante." />
+  }
+
   return (
     <div className="rounded-2xl border border-[#e6e0d7] bg-white shadow-[0_4px_15px_rgba(29,37,56,0.05)]">
-      <div className="overflow-x-auto">
+      <div className="grid gap-3 p-3 md:hidden">
+        {applications.map((app) => (
+          <article key={app.id} className="rounded-2xl border border-[#e6e0d7] bg-white p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">{app.jobTitle}</h3>
+                <p className="mt-1 text-xs text-slate-500">{app.company}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onViewDetails?.(app)}
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 text-slate-500"
+                aria-label="Ver detalles"
+              >
+                <Eye size={18} strokeWidth={2} />
+              </button>
+            </div>
+            <div className="mt-4 flex items-center gap-2">
+              <div className={`h-2 w-2 rounded-full ${getStatusDotColor(app.status)}`} />
+              <span className={`inline-block rounded-full border px-3 py-1 text-xs font-semibold ${getStatusStyles(app.status)}`}>
+                {app.status}
+              </span>
+            </div>
+            <p className="mt-3 text-xs font-semibold text-slate-500">Postulacion: {app.postulationDate}</p>
+          </article>
+        ))}
+      </div>
+
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#e6e0d7] bg-[#fbfaf9]">
@@ -125,8 +158,7 @@ export const ApplicationsTable = ({ applications, onViewDetails }: ApplicationsT
             </tr>
           </thead>
           <tbody>
-            {applications.length ? (
-              applications.map((app, idx) => (
+            {applications.map((app, idx) => (
                 <tr
                   key={app.id}
                   className={`border-b border-[#e6e0d7] transition hover:bg-[#f8f7f4] ${
@@ -179,14 +211,7 @@ export const ApplicationsTable = ({ applications, onViewDetails }: ApplicationsT
                     </button>
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={4} className="px-6 py-12 text-center text-sm text-slate-400">
-                  No hay postulaciones para mostrar.
-                </td>
-              </tr>
-            )}
+              ))}
           </tbody>
         </table>
       </div>

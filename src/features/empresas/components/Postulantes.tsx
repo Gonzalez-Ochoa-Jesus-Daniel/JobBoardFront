@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Eye, LayoutGrid, List, UserCircle } from 'lucide-react'
+import { Eye, FileText, LayoutGrid, List, UserCircle } from 'lucide-react'
 import { ROUTES } from '@/router/routes'
+import { EmptyState, ErrorState, LoadingState } from '@/shared/components/StateFeedback'
 import { usePostulantes, useVacantes } from '../hooks/useEmpresa'
 import type { Postulante } from '../types/empresa.types'
 import { KanbanPostulaciones } from './KanbanPostulaciones'
@@ -10,14 +11,22 @@ const dotEstatus: Record<string, string> = {
   pendiente: 'bg-orange-400',
   revision: 'bg-gray-300',
   entrevista: 'bg-blue-500',
+  aceptada: 'bg-emerald-500',
+  aprobado: 'bg-emerald-500',
+  aprobada: 'bg-emerald-500',
   rechazado: 'bg-red-400',
+  rechazada: 'bg-red-400',
 }
 
 const textEstatus: Record<string, string> = {
   pendiente: 'text-orange-400',
   revision: 'text-gray-500',
   entrevista: 'text-blue-500',
+  aceptada: 'text-emerald-500',
+  aprobado: 'text-emerald-500',
+  aprobada: 'text-emerald-500',
   rechazado: 'text-red-400',
+  rechazada: 'text-red-400',
 }
 
 export const Postulantes = () => {
@@ -64,15 +73,11 @@ export const Postulantes = () => {
   }
 
   if (isLoading) return (
-    <div className="flex items-center justify-center py-20">
-      <p className="text-gray-400 text-sm">Cargando postulantes...</p>
-    </div>
+    <LoadingState title="Cargando postulantes" message="Estamos consultando el talento de tus vacantes." />
   )
 
   if (isError) return (
-    <div className="flex items-center justify-center py-20">
-      <p className="text-red-400 text-sm">Error al cargar los postulantes.</p>
-    </div>
+    <ErrorState title="Error al cargar postulantes" message="Intenta actualizar la pagina en unos segundos." />
   )
 
   return (
@@ -124,18 +129,69 @@ export const Postulantes = () => {
       </div>
 
       {vacantes.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-sm p-16 text-center">
-          <p className="text-gray-400 text-sm">No hay vacantes publicadas todavia.</p>
-        </div>
+        <EmptyState title="No hay vacantes publicadas" message="Publica una vacante para comenzar a recibir postulantes." />
       ) : postulantes.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-sm p-16 text-center">
-          <p className="text-gray-400 text-sm">
-            No hay postulantes registrados para {vacanteActual?.titulo ?? 'esta vacante'}.
-          </p>
-        </div>
+        <EmptyState title="No hay postulantes registrados" message={`Aun no hay candidatos para ${vacanteActual?.titulo ?? 'esta vacante'}.`} />
       ) : vista === 'lista' ? (
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <table className="w-full">
+          <div className="grid gap-3 p-3 md:hidden">
+            {postulantes.map((postulante) => (
+              <article key={postulante.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    {postulante.fotoUrl ? (
+                      <img
+                        src={postulante.fotoUrl}
+                        alt={postulante.nombre}
+                        className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
+                      />
+                    ) : (
+                      <UserCircle size={36} className="shrink-0 text-gray-300" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-slate-900">{postulante.nombre}</p>
+                      <p className="truncate text-xs text-slate-500">{postulante.email}</p>
+                      <p className="truncate text-xs font-semibold text-emerald-600">
+                        {postulante.carrera || postulante.tipoUsuario}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {postulante.cvUrl ? (
+                      <a
+                        href={postulante.cvUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-slate-500"
+                        aria-label="Ver CV"
+                      >
+                        <FileText size={18} />
+                      </a>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => goToDetallePostulante(postulante.id)}
+                      className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-slate-500"
+                      aria-label="Ver postulante"
+                    >
+                      <Eye size={18} />
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+                  <span className="font-semibold text-slate-500">
+                    {postulante.matricula ? `Matricula ${postulante.matricula}` : postulante.estatusAcademico ?? 'Sin matricula'}
+                  </span>
+                  <span className={`inline-flex items-center gap-2 font-bold ${textEstatus[postulante.estatus?.toLowerCase()] ?? 'text-gray-400'}`}>
+                    <span className={`h-2 w-2 rounded-full ${dotEstatus[postulante.estatus?.toLowerCase()] ?? 'bg-gray-300'}`} />
+                    {postulante.estatus}
+                  </span>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <table className="hidden w-full md:table">
             <thead>
               <tr className="border-b border-gray-100">
                 <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Candidato</th>
@@ -149,7 +205,15 @@ export const Postulantes = () => {
                 <tr key={postulante.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <UserCircle size={36} className="text-gray-300" />
+                      {postulante.fotoUrl ? (
+                        <img
+                          src={postulante.fotoUrl}
+                          alt={postulante.nombre}
+                          className="h-9 w-9 rounded-full object-cover ring-1 ring-gray-200"
+                        />
+                      ) : (
+                        <UserCircle size={36} className="text-gray-300" />
+                      )}
                       <div>
                         <p className="font-semibold text-sm text-gray-800">{postulante.nombre}</p>
                         <p className="text-xs text-gray-400">{postulante.email}</p>
@@ -157,7 +221,7 @@ export const Postulantes = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {postulante.tipoUsuario}
+                    {postulante.carrera || postulante.tipoUsuario}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
@@ -168,13 +232,29 @@ export const Postulantes = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <button
-                      type="button"
-                      onClick={() => goToDetallePostulante(postulante.id)}
-                      className="hover:text-emerald-500 text-gray-400 transition-colors"
-                    >
-                      <Eye size={18} />
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => goToDetallePostulante(postulante.id)}
+                        className="hover:text-emerald-500 text-gray-400 transition-colors"
+                        title="Ver detalle"
+                      >
+                        <Eye size={18} />
+                      </button>
+                      {postulante.cvUrl ? (
+                        <a
+                          href={postulante.cvUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-emerald-500 text-gray-400 transition-colors"
+                          title="Ver CV"
+                        >
+                          <FileText size={18} />
+                        </a>
+                      ) : (
+                        <FileText size={18} className="text-gray-200" />
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -9,7 +9,7 @@ export type ManagementMetric = {
   tone: ManagementMetricTone
 }
 
-export type ManagementUserType = 'Egresado' | 'Empresa'
+export type ManagementUserType = 'Alumno' | 'Egresado' | 'Empresa'
 export type ManagementUserState = 'Activo' | 'Inactivo'
 
 export type ManagementUser = {

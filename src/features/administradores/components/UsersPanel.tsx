@@ -1,36 +1,45 @@
 import type { UserCard } from '../types/usersDashboard.types'
 
 type UsersPanelProps = {
-	cards: UserCard[]
+  cards: UserCard[]
 }
 
 function UsersPanel({ cards }: UsersPanelProps) {
-	return (
-		<section className="panel users-panel" id="usuarios">
-			<div className="panel-header">
-				<div>
-					<p className="panel-kicker">Usuarios del sistema</p>
-					<h2>Usuarios recientes</h2>
-				</div>
-			</div>
+  const maxCount = Math.max(...cards.map((card) => card.count), 1)
 
-			<div className="user-grid">
-				{cards.map((userCard) => (
-					<article key={userCard.title} className={`user-card tone-${userCard.tone}`}>
-						<div className="user-card-top">
-							<div>
-								<p className="user-indicator">{userCard.indicator}</p>
-								<h3>{userCard.title}</h3>
-							</div>
-							<strong className="user-count">{userCard.count}</strong>
-						</div>
+  return (
+    <section className="panel users-panel" id="usuarios">
+      <div className="panel-header">
+        <div>
+          <p className="panel-kicker">Usuarios del sistema</p>
+          <h2>Distribucion por tipo</h2>
+        </div>
+      </div>
 
-						<p className="user-description">{userCard.description}</p>
-					</article>
-				))}
-			</div>
-		</section>
-	)
+      <div className="user-distribution">
+        {cards.map((userCard) => {
+          const percentage = Math.max((userCard.count / maxCount) * 100, userCard.count > 0 ? 5 : 0)
+
+          return (
+            <article key={userCard.title} className={`user-distribution-row tone-${userCard.tone}`}>
+              <div className="user-distribution-copy">
+                <span>{userCard.indicator}</span>
+                <strong>{userCard.title}</strong>
+                <p>{userCard.description}</p>
+              </div>
+
+              <div className="user-distribution-metric">
+                <strong>{userCard.count}</strong>
+                <span className="user-distribution-track" aria-hidden="true">
+                  <span style={{ width: `${percentage}%` }} />
+                </span>
+              </div>
+            </article>
+          )
+        })}
+      </div>
+    </section>
+  )
 }
 
 export default UsersPanel

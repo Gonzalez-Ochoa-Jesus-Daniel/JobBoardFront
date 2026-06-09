@@ -1,6 +1,67 @@
+import {
+  AlertCircle,
+  ArrowLeft,
+  Bell,
+  BriefcaseBusiness,
+  Building2,
+  CheckCircle2,
+  CircleUserRound,
+  ClipboardList,
+  Eye,
+  FileText,
+  GraduationCap,
+  Info,
+  LayoutDashboard,
+  Loader2,
+  LogOut,
+  Pencil,
+  Plus,
+  Save,
+  Search,
+  Send,
+  Settings2,
+  ShieldCheck,
+  Trash2,
+  UserRoundCheck,
+  Users,
+  X,
+  XCircle,
+  type LucideIcon,
+} from 'lucide-react'
+
 export const APP_ICON_SIZE = 18
 export const APP_ICON_STROKE_WIDTH = 1.8
 
-// Tamaños específicos para iconos de indicadores (stats)
 export const STATS_ICON_SIZE = 32
 export const STATS_ICON_STROKE_WIDTH = 1.5
+
+export const APP_ICONS = {
+  dashboard: LayoutDashboard,
+  publications: BriefcaseBusiness,
+  applicants: UserRoundCheck,
+  profile: CircleUserRound,
+  company: Building2,
+  students: GraduationCap,
+  validation: ShieldCheck,
+  management: ClipboardList,
+  settings: Settings2,
+  tracking: Send,
+  documents: FileText,
+  users: Users,
+  search: Search,
+  view: Eye,
+  edit: Pencil,
+  create: Plus,
+  save: Save,
+  delete: Trash2,
+  close: X,
+  cancel: XCircle,
+  back: ArrowLeft,
+  logout: LogOut,
+  notifications: Bell,
+  success: CheckCircle2,
+  error: XCircle,
+  warning: AlertCircle,
+  info: Info,
+  loading: Loader2,
+} satisfies Record<string, LucideIcon>

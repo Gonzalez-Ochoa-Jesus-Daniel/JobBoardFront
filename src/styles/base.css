@@ -10,9 +10,11 @@ body,
 }
 
 body {
+  font-family: var(--font-app);
   background: #ffffff;
   color: var(--text);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 a {
@@ -61,6 +63,20 @@ select {
   font-size: 0.75rem;
   font-weight: 700;
   padding: 0 6px;
+}
+
+.search-results-count {
+  display: inline-grid;
+  min-width: 27px;
+  height: 24px;
+  flex: none;
+  place-items: center;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 0 7px;
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 .filters-preview-card {

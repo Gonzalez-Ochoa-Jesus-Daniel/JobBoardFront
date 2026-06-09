@@ -1,13 +1,19 @@
 import { useMemo } from 'react'
-import { Settings2 } from 'lucide-react'
-import AdminSidebar from '../components/layout/AdminSidebar'
+import { APP_ICONS } from '../config/iconConfig'
+import AdminLayout from '../features/administradores/components/AdminLayout'
+import AdminPageHeader from '../features/administradores/components/AdminPageHeader'
+import AdminPageState from '../features/administradores/components/AdminPageState'
 import GestorListaConfiguracion from '../features/administradores/components/GestorListaConfiguracion'
 import EstadisticasConfiguracion from '../features/administradores/components/EstadisticasConfiguracion'
 import useConfigurationOverview from '../features/administradores/hooks/useConfigurationOverview'
+import { useConfirmDialog } from '../shared/components/appConfirmContext'
+import { useAppToast } from '../shared/components/appToastContext'
 import type { ConfigurationListKey } from '../features/administradores/types/configuration.types'
 
 function ConfiguracionPage() {
-  const { programs, sectors, createItem, deleteItem, isSaving } = useConfigurationOverview()
+  const { programs, sectors, isLoading, isError, refetch, createItem, deleteItem, isSaving } = useConfigurationOverview()
+  const toast = useAppToast()
+  const { confirm } = useConfirmDialog()
 
   const totals = useMemo(
     () => ({
@@ -17,56 +23,79 @@ function ConfiguracionPage() {
     [programs.length, sectors.length],
   )
 
-  const handleCreate = (listKey: ConfigurationListKey, value: string) => createItem({ listKey, value })
+  const handleCreate = async (listKey: ConfigurationListKey, value: string) => {
+    try {
+      await createItem({ listKey, value })
+      toast.success('Elemento creado', 'La lista de registro se actualizo correctamente.')
+    } catch {
+      toast.error('No se pudo crear', 'Revisa el dato e intenta nuevamente.')
+      throw new Error('No se pudo crear el elemento')
+    }
+  }
 
-  const handleDelete = (listKey: ConfigurationListKey, itemId: string) => deleteItem({ listKey, itemId })
+  const handleDelete = async (listKey: ConfigurationListKey, itemId: string) => {
+    const accepted = await confirm({
+      title: 'Eliminar elemento',
+      message: 'Dejara de aparecer como opcion disponible en los registros nuevos.',
+      confirmLabel: 'Eliminar',
+      tone: 'danger',
+    })
+
+    if (!accepted) {
+      return
+    }
+
+    try {
+      await deleteItem({ listKey, itemId })
+      toast.success('Elemento eliminado', 'La lista de registro se actualizo correctamente.')
+    } catch {
+      toast.error('No se pudo eliminar', 'Intenta eliminar el elemento nuevamente.')
+      throw new Error('No se pudo eliminar el elemento')
+    }
+  }
 
   return (
-    <div className="app-shell">
-      <AdminSidebar activeItem="settings" />
+    <AdminLayout contentId="configuracion">
+      <AdminPageHeader
+        eyebrow="Sistema"
+        title="Listas de registro"
+        description="Administra los programas educativos y sectores empresariales disponibles durante el registro."
+        Icon={APP_ICONS.settings}
+      />
 
-      <main className="content" id="configuracion">
-        <header className="configuration-header">
-          <div>
-            <p className="configuration-eyebrow">
-              <Settings2 size={16} strokeWidth={1.9} />
-              Configuración
-            </p>
-            <h1>Listas de registro</h1>
-            <p>
-              Administra los programas educativos disponibles para el registro y los sectores empresariales que se
-              muestran a las empresas. Solo puedes crear nuevos elementos o eliminarlos.
-            </p>
-          </div>
-        </header>
+      {isLoading ? <AdminPageState type="loading" title="Cargando configuracion" /> : null}
+      {isError ? <AdminPageState type="error" onRetry={() => void refetch()} /> : null}
 
-        <EstadisticasConfiguracion programsCount={totals.programsCount} sectorsCount={totals.sectorsCount} />
+      {!isLoading && !isError ? (
+        <>
+          <EstadisticasConfiguracion programsCount={totals.programsCount} sectorsCount={totals.sectorsCount} />
 
-        <section className="configuration-grid">
-          <GestorListaConfiguracion
-            title="Programas educativos"
-            description="Se muestran en el registro de alumnos y egresados."
-            iconLabel="PE"
-            items={programs}
-            listKey="programs"
-            onCreate={handleCreate}
-            onDelete={handleDelete}
-            isBusy={isSaving}
-          />
+          <section className="configuration-grid">
+            <GestorListaConfiguracion
+              title="Programas educativos"
+              description="Se muestran en el registro de alumnos y egresados."
+              iconLabel="PE"
+              items={programs}
+              listKey="programs"
+              onCreate={handleCreate}
+              onDelete={handleDelete}
+              isBusy={isSaving}
+            />
 
-          <GestorListaConfiguracion
-            title="Sectores empresariales"
-            description="Se muestran al registrar empresas en el sistema."
-            iconLabel="SE"
-            items={sectors}
-            listKey="sectors"
-            onCreate={handleCreate}
-            onDelete={handleDelete}
-            isBusy={isSaving}
-          />
-        </section>
-      </main>
-    </div>
+            <GestorListaConfiguracion
+              title="Sectores empresariales"
+              description="Se muestran al registrar empresas en el sistema."
+              iconLabel="SE"
+              items={sectors}
+              listKey="sectors"
+              onCreate={handleCreate}
+              onDelete={handleDelete}
+              isBusy={isSaving}
+            />
+          </section>
+        </>
+      ) : null}
+    </AdminLayout>
   )
 }
 

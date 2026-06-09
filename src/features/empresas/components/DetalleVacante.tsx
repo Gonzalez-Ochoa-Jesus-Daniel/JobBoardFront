@@ -1,6 +1,9 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Calendar, DollarSign, Eye, Pencil, Users, XCircle } from 'lucide-react'
 import { ROUTES } from '@/router/routes'
+import { useConfirmDialog } from '@/shared/components/appConfirmContext'
+import { useAppToast } from '@/shared/components/appToastContext'
+import { EmptyState, ErrorState, LoadingState } from '@/shared/components/StateFeedback'
 import { useActualizarEstatusVacante, usePostulantes, useVacante } from '../hooks/useEmpresa'
 
 const formatFecha = (fecha?: string) => {
@@ -28,6 +31,8 @@ const formatCurrency = (value?: number) => {
 
 export const DetalleVacante = () => {
   const navigate = useNavigate()
+  const { confirm } = useConfirmDialog()
+  const toast = useAppToast()
   const { id } = useParams()
   const publicacionId = Number(id)
 
@@ -47,16 +52,27 @@ export const DetalleVacante = () => {
     isPending: isUpdatingStatus,
   } = useActualizarEstatusVacante()
 
-  const handleCerrarVacante = () => {
+  const handleCerrarVacante = async () => {
     if (!vacante) return
 
-    const confirmar = window.confirm(`Cerrar la vacante "${vacante.titulo}"?`)
+    const confirmar = await confirm({
+      title: 'Cerrar vacante',
+      message: `La vacante "${vacante.titulo}" dejara de estar disponible para postulaciones.`,
+      confirmLabel: 'Cerrar vacante',
+      tone: 'danger',
+    })
     if (!confirmar) return
 
-    actualizarEstatus({
-      publicacionId,
-      data: { estatus: 'Finalizada' },
-    })
+    actualizarEstatus(
+      {
+        publicacionId,
+        data: { estatus: 'Finalizada' },
+      },
+      {
+        onSuccess: () => toast.success('Vacante cerrada', 'La publicacion se marco como finalizada.'),
+        onError: () => toast.error('No se pudo cerrar', 'Intenta actualizar la vacante nuevamente.'),
+      }
+    )
   }
 
   const goToDetallePostulante = (postulanteId: number) => {
@@ -66,23 +82,17 @@ export const DetalleVacante = () => {
 
   if (!id || Number.isNaN(publicacionId)) {
     return (
-      <div className="rounded-2xl bg-white p-8 shadow-sm">
-        <p className="text-sm text-gray-500">No se encontro la vacante.</p>
-      </div>
+      <EmptyState title="No se encontro la vacante" message="Vuelve a publicaciones y selecciona una vacante valida." />
     )
   }
 
   if (isLoadingVacante) return (
-    <div className="flex items-center justify-center py-20">
-      <p className="text-gray-400 text-sm">Cargando vacante...</p>
-    </div>
+    <LoadingState title="Cargando vacante" message="Estamos preparando el detalle de la publicacion." />
   )
 
   if (isVacanteError || !vacante) {
     return (
-      <div className="rounded-2xl bg-white p-8 shadow-sm">
-        <p className="text-sm text-red-400">Error al cargar la vacante. Intenta de nuevo.</p>
-      </div>
+      <ErrorState title="Error al cargar la vacante" message="Intenta abrir la publicacion nuevamente." />
     )
   }
 
@@ -174,9 +184,9 @@ export const DetalleVacante = () => {
         </div>
 
         {isLoadingPostulantes ? (
-          <p className="text-sm text-gray-400">Cargando candidatos...</p>
+          <LoadingState title="Cargando candidatos" compact />
         ) : postulantes.length === 0 ? (
-          <p className="text-sm text-gray-400">Todavia no hay postulantes para esta vacante.</p>
+          <EmptyState title="Sin postulantes todavia" message="Cuando alguien aplique, aparecera aqui." compact />
         ) : (
           <div className="grid gap-3">
             {postulantes.slice(0, 5).map((candidato) => (

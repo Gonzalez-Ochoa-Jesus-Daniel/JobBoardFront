@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { getManagementOverview } from '../services/gestionService'
 
 function useManagementOverview() {
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'management', 'overview'],
     queryFn: () => getManagementOverview(),
   })
@@ -13,6 +13,7 @@ function useManagementOverview() {
     isLoading,
     isError,
     error,
+    refetch,
   }
 }
 

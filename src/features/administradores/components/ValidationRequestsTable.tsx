@@ -23,7 +23,7 @@ function ValidationRequestsTable({ rows, onView }: ValidationRequestsTableProps)
 				<tbody>
 					{rows.map((row) => (
 						<tr key={row.id}>
-							<td>
+							<td data-label="Solicitante">
 								<div className="validation-person">
 									<span className="validation-avatar">
 										<UserCircle2 size={26} strokeWidth={APP_ICON_STROKE_WIDTH} />
@@ -34,24 +34,24 @@ function ValidationRequestsTable({ rows, onView }: ValidationRequestsTableProps)
 									</span>
 								</div>
 							</td>
-							<td>
+							<td data-label="Tipo">
 								<span className={`validation-type-pill ${row.type === 'Empresa' ? 'is-company' : 'is-grad'}`}>
 									{row.type}
 								</span>
 							</td>
-							<td>
+							<td data-label="Fecha">
 								<div className="validation-date">
 									<Clock3 size={14} strokeWidth={APP_ICON_STROKE_WIDTH} />
 									<span>{row.submittedAgo}</span>
 								</div>
 							</td>
-							<td>
+							<td data-label="Estado">
 								<span className="validation-state-pill">
 									<Circle size={8} fill="currentColor" strokeWidth={0} />
 									{row.state}
 								</span>
 							</td>
-							<td>
+							<td data-label="Acciones">
 								<button type="button" className="validation-view-action" onClick={() => onView(row)}>
 									<Eye size={APP_ICON_SIZE} strokeWidth={APP_ICON_STROKE_WIDTH} />
 									<span>Ver</span>
@@ -63,15 +63,7 @@ function ValidationRequestsTable({ rows, onView }: ValidationRequestsTableProps)
 			</table>
 
 			<footer className="validation-pagination">
-				<span>Página 1</span>
-				<div>
-					<button type="button" aria-label="Página anterior">
-						‹
-					</button>
-					<button type="button" aria-label="Página siguiente">
-						›
-					</button>
-				</div>
+				<span>Mostrando {rows.length} solicitudes</span>
 			</footer>
 		</section>
 	)

@@ -6,6 +6,7 @@ import { FilterPanel } from '@/features/estudiantes/components/FilterPanel'
 import { MetricsGrid } from '@/features/estudiantes/components/MetricsGrid'
 import { SearchHeader } from '@/features/estudiantes/components/SearchHeader'
 import { useDashboard } from '@/features/estudiantes/hooks/useDashboard'
+import { EmptyState, ErrorState, LoadingState } from '@/shared/components/StateFeedback'
 
 export const EstudianteDashboardPage = () => {
   const {
@@ -29,7 +30,7 @@ export const EstudianteDashboardPage = () => {
 
   return (
     <PageWrapper role="Estudiante">
-      <div className="flex h-screen flex-col overflow-hidden bg-white text-[#1d2538]">
+      <div className="flex min-h-full flex-col bg-white text-[#1d2538]">
         <SearchHeader
           isSearchOpen={isSearchOpen}
           searchText={searchText}
@@ -40,16 +41,12 @@ export const EstudianteDashboardPage = () => {
         />
 
         {viewMode === 'detail' ? (
-          <section className="overflow-y-auto">
+          <section className="min-h-0 flex-1 overflow-y-auto">
             <div className="bg-white px-6 py-6">
               {isLoading ? (
-                <div className="flex items-center justify-center py-20">
-                  <p className="text-sm text-slate-400">Cargando panel...</p>
-                </div>
+                <LoadingState title="Cargando panel" message="Estamos consultando tus indicadores." />
               ) : isError ? (
-                <div className="flex items-center justify-center py-20">
-                  <p className="text-sm text-red-400">Error al cargar el panel. Intenta de nuevo.</p>
-                </div>
+                <ErrorState title="Error al cargar el panel" message="Intenta actualizar la vista en unos segundos." />
               ) : (
                 <>
                   <MetricsGrid metrics={metrics} />
@@ -71,9 +68,7 @@ export const EstudianteDashboardPage = () => {
                     />
                   ))
                 ) : (
-                  <p className="rounded-xl border border-dashed border-[#e6e0d7] px-4 py-6 text-sm text-slate-400">
-                    No hay publicaciones para mostrar.
-                  </p>
+                  <EmptyState title="No hay publicaciones para mostrar" message="Ajusta la busqueda o revisa mas tarde." compact />
                 )}
               </div>
             </div>

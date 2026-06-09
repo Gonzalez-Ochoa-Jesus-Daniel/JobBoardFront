@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { getTrackingOverview } from '../services/trackingService'
 
 function useTrackingOverview() {
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'tracking', 'overview'],
     queryFn: () => getTrackingOverview(),
   })
@@ -13,6 +13,7 @@ function useTrackingOverview() {
     isLoading,
     isError,
     error,
+    refetch,
   }
 }
 

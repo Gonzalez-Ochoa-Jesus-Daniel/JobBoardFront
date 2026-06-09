@@ -1,70 +1,88 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { AlertCircle, CheckCircle2, Clock3, Info, XCircle } from 'lucide-react'
-import { APP_ICON_SIZE, APP_ICON_STROKE_WIDTH } from '../config/iconConfig'
-import AdminSidebar from '../components/layout/AdminSidebar'
+import { APP_ICONS, APP_ICON_SIZE, APP_ICON_STROKE_WIDTH } from '../config/iconConfig'
+import AdminLayout from '../features/administradores/components/AdminLayout'
+import AdminPageHeader from '../features/administradores/components/AdminPageHeader'
+import AdminPageState from '../features/administradores/components/AdminPageState'
 import TrackingList from '../features/administradores/components/TrackingList'
 import TrackingStats from '../features/administradores/components/TrackingStats'
 import TrackingToolbar from '../features/administradores/components/TrackingToolbar'
 import useTrackingOverview from '../features/administradores/hooks/useTrackingOverview'
+import { matchesAdminFilterGroup, matchesAdminSearch } from '../features/administradores/utils/filtering'
 
 const statusInfoItems = [
   {
-    title: 'EN REVISION',
-    description: 'Tu CV se encuentra en revision por parte de la empresa, revisa mas tarde para conocer su respuesta.',
+    title: 'PENDIENTE',
+    description: 'La postulacion fue registrada y aun no inicia la revision de la empresa.',
     tone: 'is-orange',
     Icon: Clock3,
   },
   {
+    title: 'EN REVISION',
+    description: 'La empresa se encuentra evaluando el perfil y los documentos del candidato.',
+    tone: 'is-orange',
+    Icon: Clock3,
+  },
+  {
+    title: 'ENTREVISTA',
+    description: 'El candidato avanzo a una etapa de contacto o entrevista con la empresa.',
+    tone: 'is-green',
+    Icon: CheckCircle2,
+  },
+  {
     title: 'ACEPTADO',
-    description: 'Tu perfil cumple con los requisitos solicitados en la vacante, revisa tu correo, la empresa se comunica contigo.',
-    tone: 'is-green',
-    Icon: CheckCircle2,
-  },
-  {
-    title: 'APRUEBA',
-    description: 'Has aprobado el proceso de evaluacion inicial. Mantente atento a los siguientes pasos.',
-    tone: 'is-green',
-    Icon: CheckCircle2,
-  },
-  {
-    title: 'CONTRATADO',
-    description: 'Felicidades, fuiste seleccionado para la vacante y tu contratacion esta confirmada.',
+    description: 'La empresa marco al candidato como aceptado dentro del proceso.',
     tone: 'is-green',
     Icon: CheckCircle2,
   },
   {
     title: 'RECHAZADO',
-    description: 'Tu perfil no cumple con los requisitos solicitados, no te desanimes, intenta con otra vacante.',
+    description: 'La postulacion finalizo sin continuar a las siguientes etapas.',
     tone: 'is-red',
     Icon: XCircle,
   },
 ] as const
 
 function SeguimientoPostulacionesPage() {
-  const { metrics, rows } = useTrackingOverview()
+  const { metrics, rows, isLoading, isError, refetch } = useTrackingOverview()
   const [isStatusInfoOpen, setIsStatusInfoOpen] = useState(false)
+  const [searchValue, setSearchValue] = useState('')
+  const [filters, setFilters] = useState<string[]>([])
+
+  const filteredRows = useMemo(
+    () =>
+      rows.filter(
+        (row) =>
+          matchesAdminSearch(searchValue, [
+            row.candidateName,
+            row.candidateCareer,
+            row.vacancyTitle,
+            row.companyName,
+            row.status,
+            row.email,
+          ]) && matchesAdminFilterGroup(filters, 'Estado', row.status),
+      ),
+    [filters, rows, searchValue],
+  )
 
   return (
-    <div className="app-shell">
-      <AdminSidebar activeItem="tracking" />
-
-      <main className="content" id="tracking">
-        <header className="tracking-header">
-          <div>
-            <h1>Seguimiento de Postulaciones</h1>
-            <p>Monitorea el estado de las postulaciones de egresados</p>
-          </div>
-
+    <AdminLayout contentId="tracking">
+      <AdminPageHeader
+        eyebrow="Procesos"
+        title="Seguimiento de postulaciones"
+        description="Monitorea el avance de candidatos y vacantes durante cada etapa del proceso."
+        Icon={APP_ICONS.tracking}
+        actions={
           <div className="tracking-status-help">
             <button
               type="button"
-              className="tracking-info-button"
+              className="admin-header-action tracking-info-button"
               onClick={() => setIsStatusInfoOpen((current) => !current)}
               aria-expanded={isStatusInfoOpen}
               aria-controls="tracking-status-info"
             >
               <Info size={APP_ICON_SIZE} strokeWidth={APP_ICON_STROKE_WIDTH} />
-              Informacion de estados
+              Guia de estados
             </button>
 
             {isStatusInfoOpen ? (
@@ -83,18 +101,45 @@ function SeguimientoPostulacionesPage() {
 
                 <footer>
                   <AlertCircle size={16} strokeWidth={APP_ICON_STROKE_WIDTH} />
-                  Esta guia ayuda a interpretar cada fase del proceso.
+                  Guia de lectura para administradores.
                 </footer>
               </section>
             ) : null}
           </div>
-        </header>
+        }
+      />
 
-        <TrackingStats metrics={metrics} />
-        <TrackingToolbar />
-        <TrackingList rows={rows} />
-      </main>
-    </div>
+      {isLoading ? <AdminPageState type="loading" title="Cargando postulaciones" /> : null}
+      {isError ? <AdminPageState type="error" onRetry={() => void refetch()} /> : null}
+
+      {!isLoading && !isError ? (
+        <>
+          <TrackingStats metrics={metrics} />
+          <TrackingToolbar
+            searchValue={searchValue}
+            filters={filters}
+            resultCount={filteredRows.length}
+            onSearchChange={setSearchValue}
+            onFiltersChange={setFilters}
+          />
+          <div className="admin-results-summary">
+            <span>
+              Mostrando <strong>{filteredRows.length}</strong> de {rows.length} postulaciones
+            </span>
+            {filters.length > 0 ? <span>{filters.length} filtros activos</span> : null}
+          </div>
+          {filteredRows.length > 0 ? (
+            <TrackingList rows={filteredRows} />
+          ) : (
+            <AdminPageState
+              type="empty"
+              title="No encontramos postulaciones"
+              message="Cambia la busqueda o limpia los filtros activos."
+            />
+          )}
+        </>
+      ) : null}
+    </AdminLayout>
   )
 }
 

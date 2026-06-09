@@ -66,17 +66,6 @@ function PublicacionesGrid({ rows, onSelect }: PublicationsGridProps) {
 
 			<footer className="publications-footer">
 				<span>Mostrando {rows.length} publicaciones</span>
-				<div className="publications-pagination">
-					<button type="button" aria-label="Anterior">
-						{'<'}
-					</button>
-					<button type="button" className="is-current" aria-current="page">
-						1
-					</button>
-					<button type="button" aria-label="Siguiente">
-						{'>'}
-					</button>
-				</div>
 			</footer>
 		</section>
 	)

@@ -59,12 +59,34 @@ export interface UpdateEstatusRequest {
 
 export interface Postulante {
   id: number
+  postulacionId: number
   nombre: string
   email: string
   telefono?: string
   ubicacion?: string
   carrera?: string
+  matricula?: string
+  estatusAcademico?: string
   tipoUsuario: string
   estatus: string
   descripcion: string
+  fotoUrl?: string | null
+  cvUrl?: string | null
+  urlExpirationSeconds?: number
+}
+
+export interface PostulanteApi {
+  postulacionId: number
+  estudianteId: number
+  nombreCompleto: string
+  email: string
+  matricula: string
+  telefono: string
+  carrera: string
+  estatusAcademico: string
+  fotoUrl: string | null
+  cvUrl: string | null
+  urlExpirationSeconds: number
+  fechaPostulacion: string
+  estatusPostulacion: string
 }

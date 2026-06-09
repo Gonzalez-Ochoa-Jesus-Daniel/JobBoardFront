@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { getDashboardOverview } from '../services/dashboardService'
 
 function useDashboardOverview() {
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'dashboard', 'overview'],
     queryFn: () => getDashboardOverview(),
   })
@@ -14,6 +14,7 @@ function useDashboardOverview() {
     isLoading,
     isError,
     error,
+    refetch,
   }
 }
 

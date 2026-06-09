@@ -44,6 +44,22 @@ export interface ValidarUsuarioRequest {
   accion: ValidarUsuarioAccion
 }
 
+export interface ValidationDocument {
+  tipo: string
+  categoria: 'imagen' | 'pdf'
+  url: string | null
+}
+
+export interface DocumentosValidacionResponse {
+  userId: number
+  rol: string
+  estatusValidacion: string
+  nombreCompleto: string
+  email: string
+  urlExpirationSeconds: number
+  documentos: ValidationDocument[]
+}
+
 export type PublicacionEstatusAdmin = 'Pausada' | 'Finalizada' | 'Baneada' | 'Eliminada'
 
 export interface ActualizarPublicacionEstatusRequest {

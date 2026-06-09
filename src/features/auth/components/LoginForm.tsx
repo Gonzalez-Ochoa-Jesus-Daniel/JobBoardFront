@@ -1,114 +1,124 @@
-import { useState } from 'react'
-import { useLogin } from '../hooks/useAuth'
-import type { LoginRequest } from '../types/auth.types'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import campusImg from '@/assets/images/campus.png'
 import logoBlanco from '@/assets/images/logoblanco.png'
+import { ROUTES } from '@/router/routes'
+import { getLoginErrorCopy, useLogin } from '../hooks/useAuth'
+import type { LoginRequest } from '../types/auth.types'
+import './auth-flow.css'
 
 export const LoginForm = () => {
   const { mutate: login, isPending } = useLogin()
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
-
   const [form, setForm] = useState<LoginRequest>({
     email: '',
     password: '',
   })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
-    setErrorMsg(null) // limpia el error cuando el usuario escribe
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setForm((prev) => ({ ...prev, [event.target.name]: event.target.value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault()
     setErrorMsg(null)
+
     login(form, {
-      onError: () => {
-        setErrorMsg('Correo o contraseña incorrectos. Verifica tus datos.')
-      }
+      onError: (error) => {
+        const copy = getLoginErrorCopy(error)
+        setErrorMsg(`${copy.title}. ${copy.message}`)
+      },
+      onSuccess: () => setErrorMsg(null),
     })
   }
 
   return (
-    <div className="h-screen w-full overflow-y-auto">
+    <main className="auth-login-screen h-[100dvh] w-full overflow-hidden bg-slate-950">
       <div
-        className="min-h-screen w-full flex bg-cover bg-center relative"
+        className="relative flex h-full w-full bg-cover bg-center"
         style={{ backgroundImage: `url(${campusImg})` }}
       >
         <div className="absolute inset-0 bg-black/20" />
+        <div className="auth-login-ambient" aria-hidden="true" />
 
-        <div className="relative z-10 w-1/2 flex items-center justify-center bg-white/10 backdrop-blur-md rounded-[40px] m-29">
-          <img src={logoBlanco} alt="UTTecam" className="w-72" />
-        </div>
+        <section className="relative z-10 hidden h-full w-1/2 items-center justify-center p-8 lg:flex xl:p-14">
+          <div className="auth-login-logo-frame flex h-full max-h-[720px] w-full max-w-[620px] items-center justify-center rounded-[40px] bg-white/10 p-10 shadow-2xl backdrop-blur-md">
+            <img src={logoBlanco} alt="UTTecam" className="w-72 max-w-full" />
+          </div>
+        </section>
 
-        <div className="relative z-10 w-1/2 min-h-screen flex items-center justify-center">
-          <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-md mx-8">
-
-            <h1 className="text-3xl font-bold text-gray-800 mb-1">Bienvenido</h1>
-            <p className="text-gray-500 text-sm mb-8">
+        <section className="relative z-10 flex h-full w-full items-center justify-center px-5 py-4 lg:w-1/2">
+          <div className="auth-login-form-card w-full max-w-md rounded-2xl bg-white p-7 shadow-xl sm:p-9">
+            <h1 className="mb-1 text-3xl font-bold text-gray-800">Bienvenido</h1>
+            <p className="auth-login-subtitle mb-8 text-sm text-gray-500">
               Ingresa tus datos para acceder a la plataforma
             </p>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <form onSubmit={handleSubmit} className="auth-login-form flex flex-col gap-4">
+              <label className="flex flex-col gap-1 text-sm font-medium text-gray-700">
+                Email
+                <span className="relative">
+                  <input
+                    name="email"
+                    type="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    placeholder="Ingresa tu Email"
+                    required
+                    className="auth-login-input w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:border-[#009A4D] focus:ring-2 focus:ring-[#009A4D]/25"
+                  />
+                </span>
+              </label>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-700">Email</label>
-                <input
-                  name="email"
-                  type="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  placeholder="Ingresa tu Email"
-                  required
-                  className="border border-gray-200 bg-gray-50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#009A4D]"
-                />
-              </div>
+              <label className="flex flex-col gap-1 text-sm font-medium text-gray-700">
+                Contraseña
+                <span className="relative">
+                  <input
+                    name="password"
+                    type="password"
+                    value={form.password}
+                    onChange={handleChange}
+                    placeholder="Ingresa tu contraseña"
+                    required
+                    className="auth-login-input w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:border-[#009A4D] focus:ring-2 focus:ring-[#009A4D]/25"
+                  />
+                </span>
+              </label>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-700">Contraseña</label>
-                <input
-                  name="password"
-                  type="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  placeholder="Ingresa tu contraseña"
-                  required
-                  className="border border-gray-200 bg-gray-50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#009A4D]"
-                />
-              </div>
+              <Link
+                to={ROUTES.RECUPERAR_PASSWORD}
+                className="text-right text-sm font-semibold text-[#009A4D] hover:underline"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
 
-              <p className="text-right text-sm text-[#009A4D] cursor-pointer hover:underline">
-                Olvidaste tu contraseña?
-              </p>
-
-              {/* Error que persiste hasta que el usuario escribe */}
-              {errorMsg && (
-                <div className="bg-red-50 border border-red-300 text-red-600 text-sm rounded-xl px-4 py-3 text-center">
+              {errorMsg ? (
+                <div
+                  className="auth-login-error rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-600"
+                  role="alert"
+                >
                   {errorMsg}
                 </div>
-              )}
+              ) : null}
 
               <button
                 type="submit"
                 disabled={isPending}
-                className="bg-[#009A4D] hover:bg-[#10B981] text-white font-semibold py-3 rounded-xl transition-colors disabled:opacity-50"
+                className="auth-login-submit rounded-xl bg-[#009A4D] py-3 font-semibold text-white transition-colors hover:bg-[#10B981] disabled:cursor-not-allowed disabled:opacity-55"
               >
                 {isPending ? 'Entrando...' : 'Iniciar Sesión'}
               </button>
 
               <p className="text-center text-sm text-gray-500">
                 No tienes cuenta?{' '}
-                <span
-                  onClick={() => window.location.href = '/registro'}
-                  className="text-[#009A4D] cursor-pointer hover:underline"
-                >
+                <Link to={ROUTES.SELECCION_CUENTA} className="font-semibold text-[#009A4D] hover:underline">
                   Crea una aquí
-                </span>
+                </Link>
               </p>
-
             </form>
           </div>
-        </div>
+        </section>
       </div>
-    </div>
+    </main>
   )
 }

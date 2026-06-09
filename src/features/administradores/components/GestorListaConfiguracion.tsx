@@ -34,8 +34,12 @@ function GestorListaConfiguracion({
 			return
 		}
 
-		await onCreate(listKey, trimmedValue)
-		setValue('')
+		try {
+			await onCreate(listKey, trimmedValue)
+			setValue('')
+		} catch {
+			// El toast global ya comunica el error al usuario.
+		}
 	}
 
 	return (
@@ -63,20 +67,26 @@ function GestorListaConfiguracion({
 			</form>
 
 			<ul className="configuration-list">
-				{items.map((item) => (
-					<li key={item.id} className="configuration-list-item">
-						<span>{item.name}</span>
-						<button
-							type="button"
-							className="configuration-delete-btn"
-							aria-label={`Eliminar ${item.name}`}
-							disabled={isBusy}
-							onClick={() => onDelete(listKey, item.id)}
-						>
-							<Trash2 size={APP_ICON_SIZE} strokeWidth={APP_ICON_STROKE_WIDTH} />
-						</button>
-					</li>
-				))}
+				{items.length > 0 ? (
+					items.map((item) => (
+						<li key={item.id} className="configuration-list-item">
+							<span>{item.name}</span>
+							<button
+								type="button"
+								className="configuration-delete-btn"
+								aria-label={`Eliminar ${item.name}`}
+								disabled={isBusy}
+								onClick={() => {
+									void onDelete(listKey, item.id).catch(() => undefined)
+								}}
+							>
+								<Trash2 size={APP_ICON_SIZE} strokeWidth={APP_ICON_STROKE_WIDTH} />
+							</button>
+						</li>
+					))
+				) : (
+					<li className="configuration-list-empty">Aun no hay elementos en esta lista.</li>
+				)}
 			</ul>
 		</article>
 	)

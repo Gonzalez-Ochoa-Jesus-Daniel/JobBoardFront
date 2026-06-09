@@ -7,6 +7,7 @@ import { StatusSummary } from '@/features/estudiantes/components/StatusSummary'
 import { SearchApplicationCard } from '@/features/estudiantes/components/SearchApplicationCard'
 import { ApplicationSearchBar } from '@/features/estudiantes/components/ApplicationSearchBar'
 import { useSeguimiento } from '@/features/estudiantes/hooks/useSeguimiento'
+import { EmptyState, ErrorState, LoadingState } from '@/shared/components/StateFeedback'
 
 export const EstudianteSeguimientoPage = () => {
   const {
@@ -31,7 +32,7 @@ export const EstudianteSeguimientoPage = () => {
 
   return (
     <PageWrapper role="Estudiante">
-      <div className="flex h-screen flex-col overflow-hidden bg-white text-[#1d2538]">
+      <div className="flex min-h-full flex-col bg-white text-[#1d2538]">
         {/* Header con navbar - busca publicaciones */}
         <PublicacionesSearchHeader
           isSearchOpen={isSearchOpen}
@@ -47,13 +48,9 @@ export const EstudianteSeguimientoPage = () => {
           <div className="flex-1 overflow-y-auto">
             <div className="mx-auto max-w-7xl px-6 py-8">
               {isLoading ? (
-                <div className="flex items-center justify-center py-20">
-                  <p className="text-sm text-slate-400">Cargando postulaciones...</p>
-                </div>
+                <LoadingState title="Cargando postulaciones" message="Estamos revisando el seguimiento de tus aplicaciones." />
               ) : isError ? (
-                <div className="flex items-center justify-center py-20">
-                  <p className="text-sm text-red-400">Error al cargar las postulaciones. Intenta de nuevo.</p>
-                </div>
+                <ErrorState title="Error al cargar postulaciones" message="Intenta actualizar la vista en unos segundos." />
               ) : (
               <div className="grid gap-8 lg:grid-cols-4">
                 {/* Tabla de postulaciones - 3 columnas */}
@@ -93,9 +90,7 @@ export const EstudianteSeguimientoPage = () => {
                     />
                   ))
                 ) : (
-                  <p className="rounded-xl border border-dashed border-[#e6e0d7] px-4 py-6 text-sm text-slate-400">
-                    No hay postulaciones para mostrar.
-                  </p>
+                  <EmptyState title="No hay postulaciones para mostrar" message="Cuando apliques a una vacante, aparecera aqui." compact />
                 )}
               </div>
             </div>

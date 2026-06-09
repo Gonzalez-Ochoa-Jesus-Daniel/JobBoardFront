@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Sparkles } from 'lucide-react'
+import { ArrowLeft, BriefcaseBusiness } from 'lucide-react'
 import { ROUTES } from '@/router/routes'
+import { AppButton } from '@/shared/components/AppButton'
+import { FormControl, FORM_FIELD_CLASS } from '@/shared/components/FormControl'
+import { LoadingState } from '@/shared/components/StateFeedback'
+import { useAppToast } from '@/shared/components/appToastContext'
 import { useCrearVacante, useVacante } from '../hooks/useEmpresa'
 import type { CreateVacanteRequest, Vacante } from '../types/empresa.types'
 
@@ -29,6 +33,7 @@ interface FormularioVacanteProps {
 
 export const FormularioVacante = ({ modo = 'crear' }: FormularioVacanteProps) => {
   const navigate = useNavigate()
+  const toast = useAppToast()
   const { id } = useParams()
   const publicacionId = Number(id)
   const isEditMode = modo === 'editar'
@@ -65,24 +70,26 @@ export const FormularioVacante = ({ modo = 'crear' }: FormularioVacanteProps) =>
     e.preventDefault()
 
     if (isEditMode) {
-      alert('El backend actual no incluye un endpoint para editar los datos de la vacante.')
+      toast.info(
+        'Edicion no disponible',
+        'El backend actual no incluye un endpoint para editar los datos completos de la vacante.'
+      )
       return
     }
 
     crearVacante(form, {
       onSuccess: () => {
+        toast.success('Vacante publicada', 'La publicacion se creo correctamente.')
         navigate(ROUTES.EMPRESA_PUBLICACIONES)
       },
       onError: () => {
-        alert('Error al crear la vacante. Intenta de nuevo.')
+        toast.error('No se pudo publicar', 'Revisa los datos e intenta de nuevo.')
       },
     })
   }
 
   if (isEditMode && isLoadingVacante) return (
-    <div className="flex items-center justify-center py-20">
-      <p className="text-gray-400 text-sm">Cargando vacante...</p>
-    </div>
+    <LoadingState title="Cargando vacante" message="Estamos preparando la informacion para editar." />
   )
 
   return (
@@ -90,8 +97,8 @@ export const FormularioVacante = ({ modo = 'crear' }: FormularioVacanteProps) =>
       <div className="mb-8 rounded-3xl bg-gradient-to-r from-emerald-500 via-emerald-400 to-orange-400 p-7 text-white shadow-lg">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]">
-              <Sparkles size={14} />
+            <div className="inline-flex items-center gap-2 border-l-2 border-white/60 pl-3 text-xs font-semibold uppercase tracking-[0.12em]">
+              <BriefcaseBusiness size={14} />
               Vacantes
             </div>
             <h1 className="mt-3 text-2xl font-semibold">
@@ -101,13 +108,14 @@ export const FormularioVacante = ({ modo = 'crear' }: FormularioVacanteProps) =>
               Comparte los detalles clave para atraer al talento correcto.
             </p>
           </div>
-          <button
+          <AppButton
             onClick={() => navigate(ROUTES.EMPRESA_PUBLICACIONES)}
-            className="flex items-center gap-2 rounded-full border border-white/40 px-4 py-2 text-sm font-semibold text-white"
+            icon={<ArrowLeft size={16} />}
+            variant="ghost"
+            className="rounded-full border-white/40 bg-white/10 text-white hover:bg-white/20 hover:text-white"
           >
-            <ArrowLeft size={16} />
             Volver a publicaciones
-          </button>
+          </AppButton>
         </div>
       </div>
 
@@ -124,36 +132,33 @@ export const FormularioVacante = ({ modo = 'crear' }: FormularioVacanteProps) =>
             <h2 className="text-lg font-bold text-gray-800 mb-4">Informacion general</h2>
             <div className="flex flex-col gap-4">
 
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-600">Titulo del puesto</label>
+              <FormControl label="Titulo del puesto">
                 <input
                   name="titulo"
                   value={form.titulo}
                   onChange={handleChange}
                   placeholder="Ej: Desarrollador frontend"
                   required
-                  className="border border-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-400"
+                  className={FORM_FIELD_CLASS}
                 />
-              </div>
+              </FormControl>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-600">Modalidad</label>
+              <FormControl label="Modalidad">
                 <select
                   name="modalidad"
                   value={form.modalidad}
                   onChange={handleChange}
                   required
-                  className="border border-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-400"
+                  className={FORM_FIELD_CLASS}
                 >
                   <option value="">Seleccione</option>
                   {modalidades.map(m => (
                     <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
-              </div>
+              </FormControl>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-600">Sueldo aproximado (MXN)</label>
+              <FormControl label="Sueldo aproximado (MXN)">
                 <input
                   name="sueldoAprox"
                   type="number"
@@ -161,9 +166,9 @@ export const FormularioVacante = ({ modo = 'crear' }: FormularioVacanteProps) =>
                   onChange={handleChange}
                   placeholder="Ej: 15000"
                   required
-                  className="border border-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-400"
+                  className={FORM_FIELD_CLASS}
                 />
-              </div>
+              </FormControl>
 
             </div>
           </div>
@@ -177,7 +182,7 @@ export const FormularioVacante = ({ modo = 'crear' }: FormularioVacanteProps) =>
               placeholder="Describe el puesto..."
               rows={5}
               required
-              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-400 resize-none"
+              className={`${FORM_FIELD_CLASS} resize-none`}
             />
           </div>
 
@@ -194,25 +199,26 @@ export const FormularioVacante = ({ modo = 'crear' }: FormularioVacanteProps) =>
               placeholder="Lista los requisitos del puesto..."
               rows={8}
               required
-              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-400 resize-none"
+              className={`${FORM_FIELD_CLASS} resize-none`}
             />
           </div>
 
-          <div className="flex gap-3">
-            <button
-              type="button"
+          <div className="grid gap-3 sm:grid-cols-2">
+            <AppButton
               onClick={() => navigate(ROUTES.EMPRESA_PUBLICACIONES)}
-              className="flex-1 border border-gray-300 text-gray-600 font-semibold py-3 rounded-xl hover:bg-gray-50 transition-colors"
+              variant="secondary"
+              fullWidth
             >
               Cancelar
-            </button>
-            <button
+            </AppButton>
+            <AppButton
               type="submit"
-              disabled={isPending || isEditMode}
-              className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 rounded-xl transition-colors disabled:opacity-50"
+              disabled={isEditMode}
+              isLoading={isPending}
+              fullWidth
             >
-              {isEditMode ? 'Edicion no disponible' : isPending ? 'Publicando...' : 'Publicar vacante'}
-            </button>
+              {isEditMode ? 'Edicion no disponible' : 'Publicar vacante'}
+            </AppButton>
           </div>
 
         </div>

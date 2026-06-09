@@ -26,14 +26,14 @@ function VacanciesPanel({ rows }: VacanciesPanelProps) {
 					<tbody>
 						{rows.map((vacancy) => (
 							<tr key={vacancy.title}>
-								<td>
+								<td data-label="Vacante">
 									<strong>{vacancy.title}</strong>
 									<span>{vacancy.description}</span>
 								</td>
-								<td>
+								<td data-label="Estatus">
 									<span className={`status-pill status-${vacancy.status.toLowerCase()}`}>{vacancy.status}</span>
 								</td>
-								<td>{vacancy.applicants}</td>
+								<td data-label="Postulantes">{vacancy.applicants}</td>
 							</tr>
 						))}
 					</tbody>

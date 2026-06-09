@@ -4,7 +4,7 @@ import type { ValidarUsuarioAccion } from '../types/admin.types'
 
 function useValidationOverview() {
   const queryClient = useQueryClient()
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'validation', 'overview'],
     queryFn: () => getValidationOverview(),
   })
@@ -22,6 +22,7 @@ function useValidationOverview() {
     isLoading,
     isError,
     error,
+    refetch,
     validateUser: validateMutation.mutateAsync,
     isValidating: validateMutation.isPending,
   }
